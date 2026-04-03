@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { initDatabase } from '@/lib/database';
 import { COLORS } from '@/lib/constants';
 import { registerNotificationHandler } from '@/lib/registerNotificationHandler';
@@ -29,20 +29,19 @@ export default function RootLayout() {
     <>
       <Stack
         screenOptions={{
-          headerLargeTitle: true,
+          headerLargeTitle: false,
           headerShadowVisible: false,
           headerStyle: { backgroundColor: COLORS.background },
-          headerTintColor: COLORS.text,
+          headerTintColor: COLORS.primary,
+          headerTitleStyle: {
+            fontSize: 22,
+            fontWeight: '700',
+            color: COLORS.text,
+          },
           contentStyle: { backgroundColor: COLORS.background },
         }}
       >
-        <Stack.Screen
-          name="index"
-          options={{
-            title: 'Batteries',
-            headerRight: () => <HeaderAddButton />,
-          }}
-        />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen
           name="battery/[id]"
           options={{ title: 'Battery', headerBackTitle: 'Back' }}
@@ -57,11 +56,11 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="scan"
-          options={{ title: 'Scan Battery Beak', presentation: 'modal' }}
+          options={{ title: 'Scan', presentation: 'modal' }}
         />
         <Stack.Screen
           name="manual-entry/[id]"
-          options={{ title: 'Manual Entry', presentation: 'modal' }}
+          options={{ title: 'Reading', presentation: 'modal' }}
         />
         <Stack.Screen
           name="match-before/[batteryId]"
@@ -74,18 +73,6 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="light" />
     </>
-  );
-}
-
-function HeaderAddButton() {
-  const router = useRouter();
-  return (
-    <TouchableOpacity
-      onPress={() => router.push('/add-battery')}
-      style={{ marginRight: 16 }}
-    >
-      <Text style={{ fontSize: 17, color: COLORS.primary, fontWeight: '600' }}>Add</Text>
-    </TouchableOpacity>
   );
 }
 

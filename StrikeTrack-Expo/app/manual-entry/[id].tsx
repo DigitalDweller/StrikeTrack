@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { insertReading } from '@/lib/batteryDb';
-import { BATTERY_STATUSES, COLORS, type BatteryStatus } from '@/lib/constants';
+import { BATTERY_STATUSES, COLORS, FONT, RADIUS, SPACE, type BatteryStatus } from '@/lib/constants';
 
 export default function ManualEntryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,6 +52,7 @@ export default function ManualEntryScreen() {
       <ScrollView
         style={styles.container}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scroll}
       >
         <View style={styles.field}>
           <Text style={styles.label}>Status</Text>
@@ -78,14 +79,14 @@ export default function ManualEntryScreen() {
             style={styles.input}
             value={chargePercent}
             onChangeText={setChargePercent}
-            placeholder="0-130"
+            placeholder="0–130"
             placeholderTextColor={COLORS.textTertiary}
             keyboardType="decimal-pad"
           />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>V0 (no load)</Text>
+          <Text style={styles.label}>V0</Text>
           <TextInput
             style={styles.input}
             value={voltageNoLoad}
@@ -112,12 +113,12 @@ export default function ManualEntryScreen() {
           />
         </View>
         <View style={styles.field}>
-          <Text style={styles.label}>Internal Resistance (Ohms)</Text>
+          <Text style={styles.label}>Ohms</Text>
           <TextInput
             style={styles.input}
             value={internalResistance}
             onChangeText={setInternalResistance}
-            placeholder="e.g. 0.025"
+            placeholder="0.025"
             placeholderTextColor={COLORS.textTertiary}
             keyboardType="decimal-pad"
           />
@@ -144,44 +145,51 @@ export default function ManualEntryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  field: { padding: 16, paddingBottom: 0 },
+  scroll: { paddingHorizontal: SPACE.screen, paddingBottom: 32 },
+  field: { marginBottom: SPACE.block },
   label: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-    textTransform: 'uppercase',
+    fontSize: FONT.label,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 10,
   },
   input: {
     backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    padding: 16,
-    fontSize: 17,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    fontSize: FONT.input,
+    fontWeight: '500',
     color: COLORS.text,
+    minHeight: 58,
   },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  pillActive: { backgroundColor: COLORS.primary },
-  pillText: { fontSize: 15, color: COLORS.text },
-  pillTextActive: { color: '#fff', fontWeight: '600' },
+  pillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  pillText: { fontSize: FONT.meta, fontWeight: '700', color: COLORS.text },
+  pillTextActive: { color: '#fff' },
   buttons: {
     flexDirection: 'row',
     gap: 12,
-    padding: 16,
-    marginTop: 24,
+    marginTop: 8,
   },
   button: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
   },
-  cancelButton: { backgroundColor: COLORS.surfaceAlt },
-  cancelButtonText: { fontSize: 17, fontWeight: '600', color: COLORS.text },
+  cancelButton: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border },
+  cancelButtonText: { fontSize: FONT.button, fontWeight: '700', color: COLORS.text },
   saveButton: { backgroundColor: COLORS.primary },
-  saveButtonText: { fontSize: 17, fontWeight: '600', color: '#fff' },
+  saveButtonText: { fontSize: FONT.button, fontWeight: '700', color: '#fff' },
 });

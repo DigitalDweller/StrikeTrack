@@ -8,16 +8,24 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBadge } from '@/components/StatusBadge';
-import { BatteryRack, RACK_SLOT_COUNT } from '@/components/BatteryRack';
+import { AddMenuFab } from '@/components/AddMenuFab';
+import { BatterySection } from '@/components/BatterySection';
 import {
   getAllBatteries,
   deleteBattery,
-  setBatteryRackSlot,
+  setBatteryStoragePlacement,
   getAllMatchUsages,
 } from '@/lib/batteryDb';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONT, RADIUS, SPACE } from '@/lib/constants';
 import type { Battery, BatteryReading, MatchUsage } from '@/lib/database';
+import {
+  STORAGE_LAYOUT,
+  STORAGE_SECTION_LABELS,
+  STORAGE_SECTION_ORDER,
+  type StorageSection,
+} from '@/lib/storageLayout';
 import { minutesRestRemaining } from '@/lib/restTimer';
 
 type BatteryWithLatest = Battery & {
@@ -30,8 +38,28 @@ type BatteryWithLatest = Battery & {
 
 type CellBattery = Battery & { latest_reading?: BatteryReading };
 
+function buildSlots(
+  batteries: CellBattery[],
+  section: StorageSection,
+  count: number
+): (CellBattery | null)[] {
+  const arr: (CellBattery | null)[] = Array.from({ length: count }, () => null);
+  for (const b of batteries) {
+    if (b.storage_section === section && b.storage_slot != null) {
+      const s = b.storage_slot;
+      if (s >= 0 && s < count) arr[s] = b;
+    }
+  }
+  return arr;
+}
+
+function isPlaced(b: Battery): boolean {
+  return b.storage_section != null && b.storage_section !== '' && b.storage_slot != null;
+}
+
 export default function BatteryListScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [batteries, setBatteries] = useState<BatteryWithLatest[]>([]);
   const [matchUsages, setMatchUsages] = useState<MatchUsage[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -56,15 +84,17 @@ export default function BatteryListScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const slots = useMemo(() => {
-    const arr: (CellBattery | null)[] = Array.from({ length: RACK_SLOT_COUNT }, () => null);
-    for (const b of batteries) {
-      const s = b.rack_slot;
-      if (s != null && s >= 0 && s < RACK_SLOT_COUNT) {
-        arr[s] = b as CellBattery;
-      }
+  const slotMaps = useMemo(() => {
+    const list = batteries as CellBattery[];
+    const out: Record<StorageSection, (CellBattery | null)[]> = {} as Record<
+      StorageSection,
+      (CellBattery | null)[]
+    >;
+    for (const section of STORAGE_SECTION_ORDER) {
+      const { slotCount } = STORAGE_LAYOUT[section];
+      out[section] = buildSlots(list, section, slotCount);
     }
-    return arr;
+    return out;
   }, [batteries]);
 
   const restMinutesByBatteryId = useMemo(() => {
@@ -96,29 +126,24 @@ export default function BatteryListScreen() {
   };
 
   const unassignedBatteries = useMemo(
-    () =>
-      batteries.filter(
-        (b) => b.rack_slot == null || b.rack_slot < 0 || b.rack_slot >= RACK_SLOT_COUNT
-      ),
+    () => batteries.filter((b) => !isPlaced(b)),
     [batteries]
   );
 
-  const openAssignPicker = (slotIndex: number) => {
+  const openAssignPicker = (section: StorageSection, slotIndex: number) => {
     if (unassignedBatteries.length === 0) {
-      Alert.alert(
-        'No batteries to assign',
-        'Add a battery, or remove one from another rack slot first.'
-      );
+      Alert.alert('No batteries', 'Add a battery first.');
       return;
     }
+    const label = STORAGE_SECTION_LABELS[section];
     Alert.alert(
-      `Assign slot ${slotIndex + 1}`,
-      'Choose a battery for this position.',
+      `${label} · slot ${slotIndex + 1}`,
+      'Choose battery',
       [
         ...unassignedBatteries.map((b) => ({
           text: b.name,
           onPress: async () => {
-            await setBatteryRackSlot(b.id, slotIndex);
+            await setBatteryStoragePlacement(b.id, section, slotIndex);
             load();
           },
         })),
@@ -127,29 +152,37 @@ export default function BatteryListScreen() {
     );
   };
 
-  const onPressSlot = (slotIndex: number, battery: CellBattery | null) => {
+  const onPressSlot = (
+    section: StorageSection,
+    slotIndex: number,
+    battery: CellBattery | null
+  ) => {
     if (battery) {
       router.push(`/battery/${battery.id}`);
     } else {
-      openAssignPicker(slotIndex);
+      openAssignPicker(section, slotIndex);
     }
   };
 
-  const onLongPressSlot = (slotIndex: number, battery: CellBattery | null) => {
+  const onLongPressSlot = (
+    section: StorageSection,
+    slotIndex: number,
+    battery: CellBattery | null
+  ) => {
     if (!battery) {
-      openAssignPicker(slotIndex);
+      openAssignPicker(section, slotIndex);
       return;
     }
     Alert.alert(
-      'Remove from rack?',
-      `${battery.name} will stay in your list but leave slot ${slotIndex + 1}.`,
+      'Remove from grid?',
+      `${battery.name} stays in your list.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
-            await setBatteryRackSlot(battery.id, null);
+            await setBatteryStoragePlacement(battery.id, null, null);
             load();
           },
         },
@@ -162,7 +195,7 @@ export default function BatteryListScreen() {
       style={styles.row}
       onPress={() => router.push(`/battery/${item.id}`)}
       onLongPress={() => handleDelete(item)}
-      activeOpacity={0.7}
+      activeOpacity={0.75}
     >
       <View style={styles.rowContent}>
         <Text style={styles.name}>{item.name}</Text>
@@ -175,26 +208,35 @@ export default function BatteryListScreen() {
             </Text>
           </View>
         ) : (
-          <Text style={styles.noReading}>No readings yet</Text>
+          <Text style={styles.noReading}>No readings</Text>
         )}
       </View>
     </TouchableOpacity>
   );
 
+  const listHeader = (
+    <View style={{ paddingTop: insets.top + 10 }}>
+      {STORAGE_SECTION_ORDER.map((section) => (
+        <BatterySection
+          key={section}
+          title={STORAGE_SECTION_LABELS[section]}
+          section={section}
+          layout={STORAGE_LAYOUT[section]}
+          slots={slotMaps[section]}
+          restMinutesByBatteryId={restMinutesByBatteryId}
+          onPressSlot={onPressSlot}
+          onLongPressSlot={onLongPressSlot}
+        />
+      ))}
+    </View>
+  );
+
   if (batteries.length === 0) {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>No Batteries</Text>
-        <Text style={styles.emptyDesc}>
-          Add up to 10 batteries and place them on the 2×5 pit rack. Log before/after match stats
-          and get a 30-minute rest reminder before charging.
-        </Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push('/add-battery')}
-        >
-          <Text style={styles.addButtonText}>Add Battery</Text>
-        </TouchableOpacity>
+      <View style={[styles.empty, { paddingTop: insets.top + 24 }]}>
+        <Text style={styles.emptyTitle}>No batteries yet</Text>
+        <Text style={styles.emptyLine}>Tap Add below.</Text>
+        <AddMenuFab />
       </View>
     );
   }
@@ -205,85 +247,49 @@ export default function BatteryListScreen() {
         data={batteries}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <BatteryRack
-            slots={slots}
-            restMinutesByBatteryId={restMinutesByBatteryId}
-            onPressSlot={onPressSlot}
-            onLongPressSlot={onLongPressSlot}
-          />
-        }
-        contentContainerStyle={styles.list}
+        ListHeaderComponent={listHeader}
+        contentContainerStyle={[styles.list, { paddingBottom: 120 + insets.bottom }]}
         refreshing={refreshing}
         onRefresh={load}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListHeaderComponentStyle={styles.rackHeader}
+        ListHeaderComponentStyle={styles.gridHeader}
       />
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/scan')}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.fabIcon}>📷</Text>
-        <Text style={styles.fabLabel}>Scan</Text>
-      </TouchableOpacity>
+      <AddMenuFab />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  rackHeader: { marginBottom: 8 },
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
+  gridHeader: { marginBottom: 8 },
+  list: { paddingHorizontal: SPACE.screen },
   row: {
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: RADIUS.md,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  rowContent: { gap: 8 },
-  name: { fontSize: 17, fontWeight: '600', color: COLORS.text },
+  rowContent: { gap: 10 },
+  name: { fontSize: FONT.body, fontWeight: '700', color: COLORS.text },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
-  charge: { fontSize: 15, color: COLORS.textSecondary },
-  date: { fontSize: 13, color: COLORS.textTertiary },
-  noReading: { fontSize: 15, color: COLORS.textSecondary },
+  charge: { fontSize: FONT.meta, fontWeight: '700', color: COLORS.text },
+  date: { fontSize: FONT.meta, fontWeight: '600', color: COLORS.textSecondary },
+  noReading: { fontSize: FONT.meta, fontWeight: '600', color: COLORS.textSecondary },
   separator: { height: 12 },
   empty: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: SPACE.screen,
+    backgroundColor: COLORS.background,
   },
-  emptyTitle: { fontSize: 22, fontWeight: '600', marginBottom: 8, color: COLORS.text },
-  emptyDesc: {
-    fontSize: 16,
+  emptyTitle: { fontSize: FONT.title, fontWeight: '700', marginBottom: 10, color: COLORS.text },
+  emptyLine: {
+    fontSize: FONT.body,
+    fontWeight: '500',
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
   },
-  addButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  addButtonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  fabIcon: { fontSize: 20 },
-  fabLabel: { color: '#fff', fontSize: 17, fontWeight: '600' },
 });

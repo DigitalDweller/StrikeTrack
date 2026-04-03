@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import type { Battery, BatteryReading, MatchUsage } from './database';
+import type { StorageSection } from './storageLayout';
 
 const DB_NAME = 'striketrack.db';
 
@@ -42,7 +43,9 @@ export async function getReadingsByBatteryId(batteryId: string): Promise<Battery
 export async function insertBattery(battery: Omit<Battery, 'created_at'>): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    'INSERT INTO batteries (id, name, chemistry, voltage, amphour, notes, rack_slot, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    `INSERT INTO batteries (
+      id, name, chemistry, voltage, amphour, notes, rack_slot, storage_section, storage_slot, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       battery.id,
       battery.name,
@@ -51,6 +54,8 @@ export async function insertBattery(battery: Omit<Battery, 'created_at'>): Promi
       battery.amphour,
       battery.notes ?? null,
       battery.rack_slot ?? null,
+      battery.storage_section ?? null,
+      battery.storage_slot ?? null,
       new Date().toISOString(),
     ]
   );
@@ -58,14 +63,27 @@ export async function insertBattery(battery: Omit<Battery, 'created_at'>): Promi
 
 export async function updateBattery(
   id: string,
-  updates: Partial<Pick<Battery, 'name' | 'chemistry' | 'voltage' | 'amphour' | 'notes' | 'rack_slot'>>
+  updates: Partial<
+    Pick<
+      Battery,
+      | 'name'
+      | 'chemistry'
+      | 'voltage'
+      | 'amphour'
+      | 'notes'
+      | 'rack_slot'
+      | 'storage_section'
+      | 'storage_slot'
+    >
+  >
 ): Promise<void> {
   const db = await getDb();
   const b = await getBatteryById(id);
   if (!b) return;
 
   await db.runAsync(
-    'UPDATE batteries SET name = ?, chemistry = ?, voltage = ?, amphour = ?, notes = ?, rack_slot = ? WHERE id = ?',
+    `UPDATE batteries SET name = ?, chemistry = ?, voltage = ?, amphour = ?, notes = ?,
+     rack_slot = ?, storage_section = ?, storage_slot = ? WHERE id = ?`,
     [
       updates.name ?? b.name,
       updates.chemistry ?? b.chemistry,
@@ -73,21 +91,39 @@ export async function updateBattery(
       updates.amphour ?? b.amphour,
       updates.notes !== undefined ? updates.notes : b.notes,
       updates.rack_slot !== undefined ? updates.rack_slot : b.rack_slot,
+      updates.storage_section !== undefined ? updates.storage_section : b.storage_section,
+      updates.storage_slot !== undefined ? updates.storage_slot : b.storage_slot,
       id,
     ]
   );
 }
 
-/** Assign battery to rack slot 0–9 (2×5). Clears any other battery using that slot. Pass null to unassign. */
-export async function setBatteryRackSlot(batteryId: string, slot: number | null): Promise<void> {
+/**
+ * Place a battery on the dashboard grid, or clear placement (section and slot both null).
+ * Only one slot per battery; clears conflicts in the target slot.
+ */
+export async function setBatteryStoragePlacement(
+  batteryId: string,
+  section: StorageSection | null,
+  slot: number | null
+): Promise<void> {
   const db = await getDb();
-  if (slot != null) {
-    await db.runAsync('UPDATE batteries SET rack_slot = NULL WHERE rack_slot = ? AND id != ?', [
-      slot,
-      batteryId,
-    ]);
+  if (section == null || slot == null) {
+    await db.runAsync(
+      'UPDATE batteries SET storage_section = NULL, storage_slot = NULL WHERE id = ?',
+      [batteryId]
+    );
+    return;
   }
-  await db.runAsync('UPDATE batteries SET rack_slot = ? WHERE id = ?', [slot, batteryId]);
+  await db.runAsync(
+    `UPDATE batteries SET storage_section = NULL, storage_slot = NULL
+     WHERE storage_section = ? AND storage_slot = ? AND id != ?`,
+    [section, slot, batteryId]
+  );
+  await db.runAsync(
+    'UPDATE batteries SET storage_section = ?, storage_slot = ? WHERE id = ?',
+    [section, slot, batteryId]
+  );
 }
 
 export async function getAllMatchUsages(): Promise<MatchUsage[]> {

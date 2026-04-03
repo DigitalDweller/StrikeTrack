@@ -2,12 +2,23 @@
 // Data persists across refreshes and works offline after first load.
 
 import type { Battery, BatteryReading, MatchUsage } from './database.web';
+import type { StorageSection } from './storageLayout';
 
 const BATTERIES_KEY = 'striketrack_batteries';
 const READINGS_KEY = 'striketrack_readings';
 const MATCH_USAGES_KEY = 'striketrack_match_usages';
 
 function normalizeBattery(raw: Record<string, unknown>): Battery {
+  let storage_section =
+    raw.storage_section != null && raw.storage_section !== ''
+      ? String(raw.storage_section)
+      : null;
+  let storage_slot = typeof raw.storage_slot === 'number' ? raw.storage_slot : null;
+  const rack = typeof raw.rack_slot === 'number' ? raw.rack_slot : null;
+  if (storage_section == null && rack != null) {
+    storage_section = 'charging';
+    storage_slot = rack;
+  }
   return {
     id: String(raw.id),
     name: String(raw.name),
@@ -15,7 +26,9 @@ function normalizeBattery(raw: Record<string, unknown>): Battery {
     voltage: Number(raw.voltage),
     amphour: Number(raw.amphour),
     notes: raw.notes != null ? String(raw.notes) : null,
-    rack_slot: typeof raw.rack_slot === 'number' ? raw.rack_slot : null,
+    rack_slot: rack,
+    storage_section,
+    storage_slot,
     created_at: String(raw.created_at),
   };
 }
@@ -98,6 +111,8 @@ export async function insertBattery(battery: Omit<Battery, 'created_at'>): Promi
   batteries.push({
     ...battery,
     rack_slot: battery.rack_slot ?? null,
+    storage_section: battery.storage_section ?? null,
+    storage_slot: battery.storage_slot ?? null,
     created_at: new Date().toISOString(),
   });
   saveBatteries(batteries);
@@ -105,7 +120,19 @@ export async function insertBattery(battery: Omit<Battery, 'created_at'>): Promi
 
 export async function updateBattery(
   id: string,
-  updates: Partial<Pick<Battery, 'name' | 'chemistry' | 'voltage' | 'amphour' | 'notes' | 'rack_slot'>>
+  updates: Partial<
+    Pick<
+      Battery,
+      | 'name'
+      | 'chemistry'
+      | 'voltage'
+      | 'amphour'
+      | 'notes'
+      | 'rack_slot'
+      | 'storage_section'
+      | 'storage_slot'
+    >
+  >
 ): Promise<void> {
   const batteries = loadBatteries();
   const i = batteries.findIndex((b) => b.id === id);
@@ -115,18 +142,31 @@ export async function updateBattery(
   }
 }
 
-export async function setBatteryRackSlot(batteryId: string, slot: number | null): Promise<void> {
+export async function setBatteryStoragePlacement(
+  batteryId: string,
+  section: StorageSection | null,
+  slot: number | null
+): Promise<void> {
   const batteries = loadBatteries();
-  if (slot != null) {
-    for (const b of batteries) {
-      if (b.rack_slot === slot && b.id !== batteryId) {
-        b.rack_slot = null;
-      }
+  if (section == null || slot == null) {
+    const i = batteries.findIndex((b) => b.id === batteryId);
+    if (i >= 0) {
+      batteries[i].storage_section = null;
+      batteries[i].storage_slot = null;
+      saveBatteries(batteries);
+    }
+    return;
+  }
+  for (const b of batteries) {
+    if (b.storage_section === section && b.storage_slot === slot && b.id !== batteryId) {
+      b.storage_section = null;
+      b.storage_slot = null;
     }
   }
   const i = batteries.findIndex((b) => b.id === batteryId);
   if (i >= 0) {
-    batteries[i].rack_slot = slot;
+    batteries[i].storage_section = section;
+    batteries[i].storage_slot = slot;
     saveBatteries(batteries);
   }
 }

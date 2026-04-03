@@ -8,6 +8,8 @@ export type Battery = {
   amphour: number;
   notes: string | null;
   rack_slot: number | null;
+  storage_section: string | null;
+  storage_slot: number | null;
   created_at: string;
 };
 

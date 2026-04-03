@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { insertMatchUsageBefore, getBatteryById } from '@/lib/batteryDb';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONT, RADIUS, SPACE } from '@/lib/constants';
 import type { Battery } from '@/lib/database';
 
 export default function MatchBeforeScreen() {
@@ -51,7 +51,7 @@ export default function MatchBeforeScreen() {
   if (!battery) {
     return (
       <View style={[styles.centered, { backgroundColor: COLORS.background }]}>
-        <Text style={{ color: COLORS.text }}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading…</Text>
       </View>
     );
   }
@@ -64,11 +64,9 @@ export default function MatchBeforeScreen() {
       <ScrollView
         style={styles.container}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scroll}
       >
-        <Text style={styles.hint}>
-          Before match — {battery.name}. After the match, open this battery and tap “After match”
-          on this log to add post-match stats (starts the 30 min rest timer).
-        </Text>
+        <Text style={styles.batteryName}>{battery.name}</Text>
 
         <View style={styles.field}>
           <Text style={styles.label}>Match</Text>
@@ -76,14 +74,14 @@ export default function MatchBeforeScreen() {
             style={styles.input}
             value={matchLabel}
             onChangeText={setMatchLabel}
-            placeholder="e.g. QM12, Playoff 3"
+            placeholder="QM12"
             placeholderTextColor={COLORS.textTertiary}
             autoCapitalize="characters"
           />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Charge % (before)</Text>
+          <Text style={styles.label}>Charge %</Text>
           <TextInput
             style={styles.input}
             value={chargePercent}
@@ -95,24 +93,22 @@ export default function MatchBeforeScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Voltage no-load V (before)</Text>
+          <Text style={styles.label}>Voltage</Text>
           <TextInput
             style={styles.input}
             value={voltageNoLoad}
             onChangeText={setVoltageNoLoad}
-            placeholder="e.g. 12.6"
-            placeholderTextColor={COLORS.textTertiary}
             keyboardType="decimal-pad"
           />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Internal resistance Ω (before)</Text>
+          <Text style={styles.label}>Ohms</Text>
           <TextInput
             style={styles.input}
             value={internalResistance}
             onChangeText={setInternalResistance}
-            placeholder="e.g. 0.025"
+            placeholder="0.025"
             placeholderTextColor={COLORS.textTertiary}
             keyboardType="decimal-pad"
           />
@@ -130,7 +126,7 @@ export default function MatchBeforeScreen() {
             onPress={handleSave}
             disabled={!canSave}
           >
-            <Text style={styles.saveButtonText}>Save before match</Text>
+            <Text style={styles.saveButtonText}>Save</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -140,43 +136,50 @@ export default function MatchBeforeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  scroll: { paddingHorizontal: SPACE.screen, paddingBottom: 32 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  hint: {
-    margin: 16,
-    marginBottom: 8,
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
+  loadingText: { fontSize: FONT.body, fontWeight: '600', color: COLORS.text },
+  batteryName: {
+    fontSize: FONT.title,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginTop: 8,
+    marginBottom: SPACE.block,
+    letterSpacing: -0.5,
   },
-  field: { padding: 16, paddingBottom: 0 },
+  field: { marginBottom: SPACE.block },
   label: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-    textTransform: 'uppercase',
+    fontSize: FONT.label,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 10,
   },
   input: {
     backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    padding: 16,
-    fontSize: 17,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    fontSize: FONT.input,
+    fontWeight: '500',
     color: COLORS.text,
+    minHeight: 58,
   },
   buttons: {
     flexDirection: 'row',
     gap: 12,
-    padding: 16,
-    marginTop: 24,
+    marginTop: 8,
   },
   button: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
   },
-  cancelButton: { backgroundColor: COLORS.surfaceAlt },
-  cancelButtonText: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  cancelButton: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border },
+  cancelButtonText: { fontSize: FONT.button, fontWeight: '700', color: COLORS.text },
   saveButton: { backgroundColor: COLORS.primary },
-  saveButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
-  buttonDisabled: { opacity: 0.5 },
+  saveButtonText: { fontSize: FONT.button, fontWeight: '700', color: '#fff' },
+  buttonDisabled: { opacity: 0.45 },
 });

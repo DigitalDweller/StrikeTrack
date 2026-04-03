@@ -17,7 +17,7 @@ import {
   completeMatchUsageAfter,
 } from '@/lib/batteryDb';
 import { schedulePlugInReminder, requestNotificationPermission } from '@/lib/chargeReminder';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONT, RADIUS, SPACE } from '@/lib/constants';
 import type { MatchUsage } from '@/lib/database';
 
 export default function MatchAfterScreen() {
@@ -59,7 +59,7 @@ export default function MatchAfterScreen() {
     } else if (Platform.OS !== 'web') {
       Alert.alert(
         'Notifications off',
-        'Enable notifications in system settings to get the 30-minute “plug in” reminder.'
+        'Turn on notifications for the plug-in reminder.'
       );
     }
 
@@ -69,17 +69,15 @@ export default function MatchAfterScreen() {
   if (!usage) {
     return (
       <View style={[styles.centered, { backgroundColor: COLORS.background }]}>
-        <Text style={{ color: COLORS.text }}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading…</Text>
       </View>
     );
   }
 
   if (usage.after_recorded_at) {
     return (
-      <View style={[styles.centered, { backgroundColor: COLORS.background, padding: 24 }]}>
-        <Text style={{ color: COLORS.textSecondary, textAlign: 'center' }}>
-          After-match stats are already saved for this match.
-        </Text>
+      <View style={[styles.centered, { backgroundColor: COLORS.background, padding: SPACE.screen }]}>
+        <Text style={styles.doneText}>Already saved.</Text>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>Back</Text>
         </TouchableOpacity>
@@ -98,22 +96,23 @@ export default function MatchAfterScreen() {
       <ScrollView
         style={styles.container}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scroll}
       >
-        <Text style={styles.hint}>
-          After match — {usage.match_label} ({batteryName}). Saving schedules a reminder in 30 minutes
-          to plug the battery back in.
+        <Text style={styles.headline}>
+          {usage.match_label}
+          {batteryName ? ` · ${batteryName}` : ''}
         </Text>
 
         <View style={styles.beforeCard}>
-          <Text style={styles.beforeTitle}>Before (saved)</Text>
+          <Text style={styles.beforeTitle}>Before</Text>
           <Text style={styles.beforeLine}>
-            % {fmt(usage.before_charge_percent)} · V {fmt(usage.before_voltage_no_load)} · Ω{' '}
-            {fmt(usage.before_internal_resistance)}
+            {fmt(usage.before_charge_percent)}% · {fmt(usage.before_voltage_no_load)} V ·{' '}
+            {fmt(usage.before_internal_resistance)} Ω
           </Text>
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Charge % (after)</Text>
+          <Text style={styles.label}>Charge %</Text>
           <TextInput
             style={styles.input}
             value={chargePercent}
@@ -125,24 +124,22 @@ export default function MatchAfterScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Voltage no-load V (after)</Text>
+          <Text style={styles.label}>Voltage</Text>
           <TextInput
             style={styles.input}
             value={voltageNoLoad}
             onChangeText={setVoltageNoLoad}
-            placeholder="e.g. 12.4"
-            placeholderTextColor={COLORS.textTertiary}
             keyboardType="decimal-pad"
           />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Internal resistance Ω (after)</Text>
+          <Text style={styles.label}>Ohms</Text>
           <TextInput
             style={styles.input}
             value={internalResistance}
             onChangeText={setInternalResistance}
-            placeholder="e.g. 0.028"
+            placeholder="0.028"
             placeholderTextColor={COLORS.textTertiary}
             keyboardType="decimal-pad"
           />
@@ -159,7 +156,7 @@ export default function MatchAfterScreen() {
             style={[styles.button, styles.saveButton]}
             onPress={handleSave}
           >
-            <Text style={styles.saveButtonText}>Save after match</Text>
+            <Text style={styles.saveButtonText}>Save</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -169,64 +166,79 @@ export default function MatchAfterScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  scroll: { paddingHorizontal: SPACE.screen, paddingBottom: 32 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  hint: {
-    margin: 16,
-    marginBottom: 8,
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
+  loadingText: { fontSize: FONT.body, fontWeight: '600', color: COLORS.text },
+  doneText: {
+    fontSize: FONT.section,
+    fontWeight: '700',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  headline: {
+    fontSize: FONT.title,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginTop: 8,
+    marginBottom: SPACE.block,
+    letterSpacing: -0.5,
   },
   beforeCard: {
-    marginHorizontal: 16,
-    padding: 14,
+    padding: 18,
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    marginBottom: 8,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACE.block,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   beforeTitle: {
-    fontSize: 12,
-    color: COLORS.textTertiary,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  beforeLine: { fontSize: 16, color: COLORS.text },
-  field: { padding: 16, paddingBottom: 0 },
-  label: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: FONT.label,
+    fontWeight: '800',
+    color: COLORS.text,
     marginBottom: 8,
-    textTransform: 'uppercase',
+  },
+  beforeLine: { fontSize: FONT.body, fontWeight: '600', color: COLORS.text },
+  field: { marginBottom: SPACE.block },
+  label: {
+    fontSize: FONT.label,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 10,
   },
   input: {
     backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    padding: 16,
-    fontSize: 17,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    fontSize: FONT.input,
+    fontWeight: '500',
     color: COLORS.text,
+    minHeight: 58,
   },
   buttons: {
     flexDirection: 'row',
     gap: 12,
-    padding: 16,
-    marginTop: 24,
+    marginTop: 8,
   },
   button: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
   },
-  cancelButton: { backgroundColor: COLORS.surfaceAlt },
-  cancelButtonText: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  cancelButton: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border },
+  cancelButtonText: { fontSize: FONT.button, fontWeight: '700', color: COLORS.text },
   saveButton: { backgroundColor: COLORS.primary },
-  saveButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  saveButtonText: { fontSize: FONT.button, fontWeight: '700', color: '#fff' },
   backBtn: {
-    marginTop: 20,
+    marginTop: 8,
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: RADIUS.md,
   },
-  backBtnText: { color: '#fff', fontWeight: '600' },
+  backBtnText: { color: '#fff', fontWeight: '700', fontSize: FONT.button },
 });

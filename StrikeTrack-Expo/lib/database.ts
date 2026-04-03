@@ -7,6 +7,17 @@ async function migrateSchema(db: SQLite.SQLiteDatabase) {
   if (!cols.some((c) => c.name === 'rack_slot')) {
     await db.execAsync('ALTER TABLE batteries ADD COLUMN rack_slot INTEGER');
   }
+  if (!cols.some((c) => c.name === 'storage_section')) {
+    await db.execAsync('ALTER TABLE batteries ADD COLUMN storage_section TEXT');
+  }
+  if (!cols.some((c) => c.name === 'storage_slot')) {
+    await db.execAsync('ALTER TABLE batteries ADD COLUMN storage_slot INTEGER');
+  }
+
+  await db.runAsync(
+    `UPDATE batteries SET storage_section = 'charging', storage_slot = rack_slot
+     WHERE rack_slot IS NOT NULL AND storage_section IS NULL`
+  );
 
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS match_usages (
@@ -74,7 +85,10 @@ export type Battery = {
   voltage: number;
   amphour: number;
   notes: string | null;
+  /** @deprecated use storage_section + storage_slot */
   rack_slot: number | null;
+  storage_section: string | null;
+  storage_slot: number | null;
   created_at: string;
 };
 

@@ -17,6 +17,9 @@ import {
   VOLTAGES,
   AMP_HOURS,
   COLORS,
+  FONT,
+  RADIUS,
+  SPACE,
   type Chemistry,
 } from '@/lib/constants';
 
@@ -61,20 +64,24 @@ export default function EditBatteryScreen() {
   if (loading) {
     return (
       <View style={[styles.centered, { backgroundColor: COLORS.background }]}>
-        <Text style={{ color: COLORS.text }}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading…</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={styles.container}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={styles.scroll}
+    >
       <View style={styles.section}>
-        <Text style={styles.label}>Battery Name</Text>
+        <Text style={styles.label}>Name</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="e.g., Battery 1, A-17"
+          placeholder="Battery name"
           placeholderTextColor={COLORS.textTertiary}
         />
       </View>
@@ -118,7 +125,7 @@ export default function EditBatteryScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Amp Hour</Text>
+        <Text style={styles.label}>Amp hour</Text>
         <View style={styles.pickerRow}>
           {AMP_HOURS.map((ah) => (
             <TouchableOpacity
@@ -142,7 +149,7 @@ export default function EditBatteryScreen() {
           style={[styles.input, styles.textArea]}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Optional notes"
+          placeholder="Optional"
           placeholderTextColor={COLORS.textTertiary}
           multiline
           numberOfLines={3}
@@ -170,47 +177,56 @@ export default function EditBatteryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  scroll: { paddingBottom: 32 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  section: { padding: 16, paddingBottom: 0 },
+  loadingText: { fontSize: FONT.body, fontWeight: '600', color: COLORS.text },
+  section: { paddingHorizontal: SPACE.screen, marginBottom: SPACE.block },
   label: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-    textTransform: 'uppercase',
+    fontSize: FONT.label,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 10,
   },
   input: {
     backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    padding: 16,
-    fontSize: 17,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    fontSize: FONT.input,
+    fontWeight: '500',
     color: COLORS.text,
+    minHeight: 58,
   },
-  textArea: { minHeight: 80, textAlignVertical: 'top' },
+  textArea: { minHeight: 100, textAlignVertical: 'top' },
   pickerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   pill: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 14,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  pillActive: { backgroundColor: COLORS.primary },
-  pillText: { fontSize: 16, color: COLORS.text },
-  pillTextActive: { color: '#fff', fontWeight: '600' },
+  pillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  pillText: { fontSize: FONT.meta, fontWeight: '700', color: COLORS.text },
+  pillTextActive: { color: '#fff' },
   buttons: {
     flexDirection: 'row',
     gap: 12,
-    padding: 16,
-    marginTop: 24,
+    paddingHorizontal: SPACE.screen,
+    marginTop: 8,
   },
   button: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
   },
-  cancelButton: { backgroundColor: COLORS.surfaceAlt },
-  cancelButtonText: { fontSize: 17, fontWeight: '600', color: COLORS.text },
+  cancelButton: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border },
+  cancelButtonText: { fontSize: FONT.button, fontWeight: '700', color: COLORS.text },
   saveButton: { backgroundColor: COLORS.primary },
-  saveButtonText: { fontSize: 17, fontWeight: '600', color: '#fff' },
-  buttonDisabled: { opacity: 0.5 },
+  saveButtonText: { fontSize: FONT.button, fontWeight: '700', color: '#fff' },
+  buttonDisabled: { opacity: 0.45 },
 });

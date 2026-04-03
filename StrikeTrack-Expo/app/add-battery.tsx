@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,26 +6,35 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { insertBattery } from '@/lib/batteryDb';
-import {
-  CHEMISTRIES,
-  VOLTAGES,
-  AMP_HOURS,
-  COLORS,
-  type Chemistry,
-} from '@/lib/constants';
+import { insertBattery, insertReading } from '@/lib/batteryDb';
+import { COLORS, FONT, RADIUS, SPACE } from '@/lib/constants';
 
 export default function AddBatteryScreen() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [chemistry, setChemistry] = useState<Chemistry>('Lead Acid');
-  const [voltage, setVoltage] = useState(12);
-  const [amphour, setAmphour] = useState(17);
+  const nameRef = useRef<TextInput>(null);
+  const chargeRef = useRef<TextInput>(null);
+  const ohmsRef = useRef<TextInput>(null);
 
-  const canSave = name.trim().length > 0;
+  const [name, setName] = useState('');
+  const [chargePercent, setChargePercent] = useState('100');
+  const [internalResistance, setInternalResistance] = useState('');
+
+  const rawCharge = parseFloat(chargePercent);
+  const parsedCharge = Number.isNaN(rawCharge)
+    ? NaN
+    : Math.min(130, Math.max(0, rawCharge));
+  const trimmedOhms = internalResistance.trim();
+  const parsedOhms =
+    trimmedOhms.length > 0 ? parseFloat(trimmedOhms) : NaN;
+  const canSave =
+    name.trim().length > 0 &&
+    !Number.isNaN(parsedCharge) &&
+    !Number.isNaN(parsedOhms) &&
+    parsedOhms >= 0;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -33,142 +42,146 @@ export default function AddBatteryScreen() {
     await insertBattery({
       id,
       name: name.trim(),
-      chemistry,
-      voltage,
-      amphour,
+      chemistry: 'Lead Acid',
+      voltage: 12,
+      amphour: 17,
       notes: null,
       rack_slot: null,
+      storage_section: null,
+      storage_slot: null,
+    });
+    await insertReading({
+      id: crypto.randomUUID(),
+      battery_id: id,
+      status: 'Good',
+      charge_percent: parsedCharge,
+      voltage_no_load: null,
+      voltage_load1: null,
+      voltage_load2: null,
+      current_load2: null,
+      internal_resistance: parsedOhms,
+      raw_ocr_text: null,
+      source: 'Manual',
     });
     router.back();
   };
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.section}>
-        <Text style={styles.label}>Battery Name</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="e.g., Battery 1, A-17, Pit Alpha"
-          placeholderTextColor={COLORS.textTertiary}
-          autoCapitalize="none"
-        />
-      </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+    >
+      <ScrollView
+        style={styles.container}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Text style={styles.screenTitle}>New battery</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Chemistry</Text>
-        <View style={styles.pickerRow}>
-          {CHEMISTRIES.map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[
-                styles.pill,
-                chemistry === c && styles.pillActive,
-              ]}
-              onPress={() => setChemistry(c)}
-            >
-              <Text
-                style={[
-                  styles.pillText,
-                  chemistry === c && styles.pillTextActive,
-                ]}
-              >
-                {c}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.block}>
+          <Text style={styles.label}>Name</Text>
+          <TextInput
+            ref={nameRef}
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Battery 3"
+            placeholderTextColor={COLORS.textTertiary}
+            returnKeyType="next"
+            blurOnSubmit={false}
+            onSubmitEditing={() => chargeRef.current?.focus()}
+            autoCapitalize="characters"
+            autoCorrect={false}
+          />
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Voltage</Text>
-        <View style={styles.pickerRow}>
-          {VOLTAGES.map((v) => (
-            <TouchableOpacity
-              key={v}
-              style={[styles.pill, voltage === v && styles.pillActive]}
-              onPress={() => setVoltage(v)}
-            >
-              <Text
-                style={[styles.pillText, voltage === v && styles.pillTextActive]}
-              >
-                {v}V
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.block}>
+          <Text style={styles.label}>Charge %</Text>
+          <TextInput
+            ref={chargeRef}
+            style={styles.input}
+            value={chargePercent}
+            onChangeText={setChargePercent}
+            placeholder="0–130"
+            placeholderTextColor={COLORS.textTertiary}
+            keyboardType="decimal-pad"
+            returnKeyType="next"
+            blurOnSubmit={false}
+            onSubmitEditing={() => ohmsRef.current?.focus()}
+          />
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Amp Hour</Text>
-        <View style={styles.pickerRow}>
-          {AMP_HOURS.map((ah) => (
-            <TouchableOpacity
-              key={ah}
-              style={[styles.pill, amphour === ah && styles.pillActive]}
-              onPress={() => setAmphour(ah)}
-            >
-              <Text
-                style={[styles.pillText, amphour === ah && styles.pillTextActive]}
-              >
-                {ah} Ah
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.block}>
+          <Text style={styles.label}>Ohms</Text>
+          <TextInput
+            ref={ohmsRef}
+            style={styles.input}
+            value={internalResistance}
+            onChangeText={setInternalResistance}
+            placeholder="0.025"
+            placeholderTextColor={COLORS.textTertiary}
+            keyboardType="decimal-pad"
+            returnKeyType="done"
+            onSubmitEditing={handleSave}
+          />
         </View>
-      </View>
 
-      <View style={styles.buttons}>
         <TouchableOpacity
-          style={[styles.button, styles.cancelButton]}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, styles.saveButton, !canSave && styles.buttonDisabled]}
+          style={[styles.addButton, !canSave && styles.addButtonDisabled]}
           onPress={handleSave}
           disabled={!canSave}
+          activeOpacity={0.85}
         >
-          <Text style={styles.saveButtonText}>Add</Text>
+          <Text style={styles.addButtonText}>Add battery</Text>
         </TouchableOpacity>
-      </View>
-    </ScrollView>
+
+        <TouchableOpacity style={styles.cancelLink} onPress={() => router.back()}>
+          <Text style={styles.cancelLinkText}>Cancel</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  section: { padding: 16, paddingBottom: 0 },
-  label: { fontSize: 13, color: COLORS.textSecondary, marginBottom: 8, textTransform: 'uppercase' },
+  scrollContent: { paddingBottom: 40, paddingHorizontal: SPACE.screen },
+  screenTitle: {
+    fontSize: FONT.hero,
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: -0.8,
+    marginTop: 8,
+    marginBottom: SPACE.block,
+  },
+  block: { marginBottom: SPACE.block },
+  label: {
+    fontSize: FONT.label,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 10,
+  },
   input: {
     backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    padding: 16,
-    fontSize: 17,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    fontSize: FONT.input,
+    fontWeight: '500',
     color: COLORS.text,
+    minHeight: 60,
   },
-  pickerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  pill: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: COLORS.surface,
+  addButton: {
+    marginTop: 12,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 20,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
   },
-  pillActive: { backgroundColor: COLORS.primary },
-  pillText: { fontSize: 16, color: COLORS.text },
-  pillTextActive: { color: '#fff', fontWeight: '600' },
-  buttons: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 16,
-    marginTop: 24,
-  },
-  button: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center' },
-  cancelButton: { backgroundColor: COLORS.surfaceAlt },
-  cancelButtonText: { fontSize: 17, fontWeight: '600', color: COLORS.text },
-  saveButton: { backgroundColor: COLORS.primary },
-  saveButtonText: { fontSize: 17, fontWeight: '600', color: '#fff' },
-  buttonDisabled: { opacity: 0.5 },
+  addButtonDisabled: { opacity: 0.4 },
+  addButtonText: { fontSize: FONT.button, fontWeight: '700', color: '#fff' },
+  cancelLink: { alignItems: 'center', marginTop: 20, padding: 14 },
+  cancelLinkText: { fontSize: FONT.body, color: COLORS.textSecondary, fontWeight: '600' },
 });

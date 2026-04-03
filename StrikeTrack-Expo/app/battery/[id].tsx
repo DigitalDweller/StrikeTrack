@@ -15,7 +15,7 @@ import {
   deleteBattery,
   getMatchUsagesByBatteryId,
 } from '@/lib/batteryDb';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONT, RADIUS, SPACE } from '@/lib/constants';
 import type { Battery, BatteryReading, MatchUsage } from '@/lib/database';
 import { minutesRestRemaining } from '@/lib/restTimer';
 
@@ -73,7 +73,7 @@ export default function BatteryDetailScreen() {
   if (!battery) {
     return (
       <View style={[styles.centered, { backgroundColor: COLORS.background }]}>
-        <Text style={{ color: COLORS.text }}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading…</Text>
       </View>
     );
   }
@@ -98,8 +98,8 @@ export default function BatteryDetailScreen() {
             <Text style={styles.charge}>{Math.round(latest.charge_percent)}%</Text>
           </View>
           {latest.internal_resistance != null && (
-            <Text style={styles.rint}>
-              Rint: {latest.internal_resistance.toFixed(3)} Ω
+            <Text style={styles.ohms}>
+              {latest.internal_resistance.toFixed(3)} Ω
             </Text>
           )}
           <Text style={styles.date}>
@@ -107,23 +107,23 @@ export default function BatteryDetailScreen() {
           </Text>
           {restMin != null && (
             <Text style={styles.restBanner}>
-              Post-match rest: ~{restMin} min left before charging
+              Rest ~{restMin} min before charging
             </Text>
           )}
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>FRC match log</Text>
+      <Text style={styles.sectionTitle}>Match log</Text>
       <View style={styles.matchActions}>
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => router.push(`/match-before/${id}`)}
         >
-          <Text style={styles.actionBtnText}>＋ Before match</Text>
+          <Text style={styles.actionBtnText}>Before match</Text>
         </TouchableOpacity>
       </View>
       {matchUsages.length === 0 ? (
-        <Text style={styles.noReadings}>No matches logged yet</Text>
+        <Text style={styles.mutedBlock}>No matches logged</Text>
       ) : (
         <View style={styles.matchList}>
           {matchUsages.map((u) => (
@@ -143,7 +143,7 @@ export default function BatteryDetailScreen() {
                   style={styles.afterLink}
                   onPress={() => router.push(`/match-after/${u.id}`)}
                 >
-                  <Text style={styles.afterLinkText}>Enter after-match stats →</Text>
+                  <Text style={styles.afterLinkText}>After match →</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -151,9 +151,9 @@ export default function BatteryDetailScreen() {
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>Reading History</Text>
+      <Text style={styles.sectionTitle}>History</Text>
       {readings.length === 0 ? (
-        <Text style={styles.noReadings}>No readings yet</Text>
+        <Text style={styles.mutedBlock}>No readings</Text>
       ) : (
         <FlatList
           data={readings}
@@ -180,25 +180,25 @@ export default function BatteryDetailScreen() {
           style={styles.actionBtn}
           onPress={() => router.push(`/scan?batteryId=${id}`)}
         >
-          <Text style={styles.actionBtnText}>📷 Scan Battery Beak</Text>
+          <Text style={styles.actionBtnText}>Scan Beak</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => router.push(`/manual-entry/${id}`)}
         >
-          <Text style={styles.actionBtnText}>✏️ Quick reading (Beak)</Text>
+          <Text style={styles.actionBtnText}>New reading</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionBtn, styles.editBtn]}
           onPress={() => router.push(`/edit-battery/${id}`)}
         >
-          <Text style={styles.actionBtnText}>Edit Battery</Text>
+          <Text style={styles.editBtnText}>Edit</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionBtn, styles.deleteBtn]}
           onPress={handleDelete}
         >
-          <Text style={styles.deleteBtnText}>Delete Battery</Text>
+          <Text style={styles.deleteBtnText}>Delete battery</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -208,69 +208,84 @@ export default function BatteryDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { fontSize: FONT.body, fontWeight: '600', color: COLORS.text },
   latestCard: {
     backgroundColor: COLORS.surface,
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    margin: SPACE.screen,
+    padding: 20,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   latestHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  charge: { fontSize: 24, fontWeight: '700', color: COLORS.text },
-  rint: { fontSize: 15, color: COLORS.textSecondary, marginBottom: 4 },
-  date: { fontSize: 13, color: COLORS.textTertiary },
+  charge: { fontSize: 36, fontWeight: '800', color: COLORS.text, letterSpacing: -1 },
+  ohms: { fontSize: FONT.body, fontWeight: '600', color: COLORS.text, marginBottom: 6 },
+  date: { fontSize: FONT.meta, fontWeight: '600', color: COLORS.textSecondary },
   sectionTitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-    textTransform: 'uppercase',
+    fontSize: FONT.section,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginHorizontal: SPACE.screen,
+    marginTop: 8,
+    marginBottom: 12,
+    letterSpacing: -0.4,
   },
-  noReadings: { color: COLORS.textSecondary, padding: 16 },
-  listContent: { paddingHorizontal: 16, paddingBottom: 16 },
+  mutedBlock: {
+    fontSize: FONT.body,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    paddingHorizontal: SPACE.screen,
+    paddingBottom: 12,
+  },
+  listContent: { paddingHorizontal: SPACE.screen, paddingBottom: 16 },
   readingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: RADIUS.md,
     gap: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  readingCharge: { fontWeight: '600', color: COLORS.text },
-  readingDate: { marginLeft: 'auto', color: COLORS.textSecondary, fontSize: 14 },
-  separator: { height: 8 },
-  actions: { padding: 16, gap: 12 },
+  readingCharge: { fontSize: FONT.body, fontWeight: '800', color: COLORS.text },
+  readingDate: { marginLeft: 'auto', color: COLORS.textSecondary, fontSize: FONT.meta, fontWeight: '600' },
+  separator: { height: 10 },
+  actions: { padding: SPACE.screen, gap: 12, paddingBottom: 28 },
   actionBtn: {
     backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
   },
-  actionBtnText: { color: '#fff', fontSize: 17, fontWeight: '600' },
-  editBtn: { backgroundColor: COLORS.surfaceAlt },
-  deleteBtn: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.destructive },
-  deleteBtnText: { color: COLORS.destructive, fontSize: 17, fontWeight: '600' },
+  actionBtnText: { color: '#fff', fontSize: FONT.button, fontWeight: '700' },
+  editBtn: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border },
+  editBtnText: { color: COLORS.text, fontSize: FONT.button, fontWeight: '700' },
+  deleteBtn: { backgroundColor: 'transparent', borderWidth: 2, borderColor: COLORS.destructive },
+  deleteBtnText: { color: COLORS.destructive, fontSize: FONT.button, fontWeight: '700' },
   restBanner: {
-    marginTop: 10,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffcc00',
+    marginTop: 14,
+    fontSize: FONT.meta,
+    fontWeight: '700',
+    color: COLORS.warning,
   },
-  matchActions: { paddingHorizontal: 16, marginBottom: 8 },
-  matchList: { paddingHorizontal: 16, gap: 10, marginBottom: 8 },
+  matchActions: { paddingHorizontal: SPACE.screen, marginBottom: 10 },
+  matchList: { paddingHorizontal: SPACE.screen, gap: 12, marginBottom: 8 },
   matchRow: {
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 14,
-    gap: 6,
+    borderRadius: RADIUS.md,
+    padding: 18,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  matchLabel: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  matchStats: { fontSize: 14, color: COLORS.textSecondary },
+  matchLabel: { fontSize: FONT.body, fontWeight: '800', color: COLORS.text },
+  matchStats: { fontSize: FONT.meta, fontWeight: '600', color: COLORS.text },
   afterLink: { alignSelf: 'flex-start', marginTop: 4 },
-  afterLinkText: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
+  afterLinkText: { fontSize: FONT.body, fontWeight: '700', color: COLORS.primary },
 });
