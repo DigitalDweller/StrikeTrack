@@ -1,4 +1,5 @@
 import type { BatteryStatus } from './constants';
+import { clampChargePercent } from './chargePercent';
 
 export type ParsedBatteryReading = {
   status?: BatteryStatus;
@@ -28,12 +29,12 @@ function parseCharge(text: string): number | undefined {
   const match = text.match(/Charge:\s*(\d{1,3})%?/i);
   if (match) {
     const val = parseFloat(match[1]);
-    return Math.min(130, Math.max(0, val));
+    return clampChargePercent(val);
   }
   const pctMatch = text.match(/\d{1,3}%/);
   if (pctMatch) {
     const val = parseFloat(pctMatch[0].replace('%', ''));
-    return Math.min(130, Math.max(0, val));
+    return clampChargePercent(val);
   }
   return undefined;
 }

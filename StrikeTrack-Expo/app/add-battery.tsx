@@ -11,13 +11,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getAllBatteries, insertBattery, insertReading } from '@/lib/batteryDb';
+import { capChargePercentInput, clampChargePercent, MAX_CHARGE_PERCENT } from '@/lib/chargePercent';
 import { COLORS, FONT, RADIUS, SPACE } from '@/lib/constants';
 import { STORAGE_LAYOUT } from '@/lib/storageLayout';
 
-function firstOpenSlotIndex(
-  slotCount: number,
-  usedSlots: Set<number>
-): number | null {
+function firstOpenSlotIndex(slotCount: number, usedSlots: Set<number>): number | null {
   for (let i = 0; i < slotCount; i += 1) {
     if (!usedSlots.has(i)) return i;
   }
@@ -35,12 +33,9 @@ export default function AddBatteryScreen() {
   const [internalResistance, setInternalResistance] = useState('');
 
   const rawCharge = parseFloat(chargePercent);
-  const parsedCharge = Number.isNaN(rawCharge)
-    ? NaN
-    : Math.min(130, Math.max(0, rawCharge));
+  const parsedCharge = Number.isNaN(rawCharge) ? NaN : clampChargePercent(rawCharge);
   const trimmedOhms = internalResistance.trim();
-  const parsedOhms =
-    trimmedOhms.length > 0 ? parseFloat(trimmedOhms) : NaN;
+  const parsedOhms = trimmedOhms.length > 0 ? parseFloat(trimmedOhms) : NaN;
   const canSave =
     name.trim().length > 0 &&
     !Number.isNaN(parsedCharge) &&
@@ -50,21 +45,14 @@ export default function AddBatteryScreen() {
   const handleSave = async () => {
     if (!canSave) return;
     const id = crypto.randomUUID();
+
     const batteries = await getAllBatteries();
     const usedUnassignedSlots = new Set(
       batteries
-        .filter(
-          (b) =>
-            b.storage_section === 'extra' &&
-            b.storage_slot != null &&
-            b.storage_slot >= 0
-        )
+        .filter((b) => b.storage_section === 'extra' && b.storage_slot != null && b.storage_slot >= 0)
         .map((b) => b.storage_slot as number)
     );
-    const unassignedSlot = firstOpenSlotIndex(
-      STORAGE_LAYOUT.extra.slotCount,
-      usedUnassignedSlots
-    );
+    const unassignedSlot = firstOpenSlotIndex(STORAGE_LAYOUT.extra.slotCount, usedUnassignedSlots);
 
     await insertBattery({
       id,
@@ -128,8 +116,8 @@ export default function AddBatteryScreen() {
             ref={chargeRef}
             style={styles.input}
             value={chargePercent}
-            onChangeText={setChargePercent}
-            placeholder="0–130"
+            onChangeText={(v) => setChargePercent(capChargePercentInput(v))}
+            placeholder={`0–${MAX_CHARGE_PERCENT}`}
             placeholderTextColor={COLORS.textTertiary}
             keyboardType="decimal-pad"
             returnKeyType="next"

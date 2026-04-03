@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import type { Battery, BatteryReading, MatchUsage } from './database';
+import { clampChargePercent } from './chargePercent';
 import type { StorageSection } from './storageLayout';
 
 const DB_NAME = 'striketrack.db';
@@ -172,7 +173,9 @@ export async function insertMatchUsageBefore(row: {
       row.id,
       row.battery_id,
       row.match_label,
-      row.before_charge_percent,
+      row.before_charge_percent == null
+        ? null
+        : clampChargePercent(row.before_charge_percent),
       row.before_voltage_no_load,
       row.before_internal_resistance,
       new Date().toISOString(),
@@ -198,7 +201,7 @@ export async function completeMatchUsageAfter(
       after_recorded_at = ?
     WHERE id = ?`,
     [
-      after.after_charge_percent,
+      clampChargePercent(after.after_charge_percent),
       after.after_voltage_no_load,
       after.after_internal_resistance,
       when,
@@ -226,7 +229,7 @@ export async function insertReading(reading: Omit<BatteryReading, 'created_at'>)
       reading.id,
       reading.battery_id ?? null,
       reading.status,
-      reading.charge_percent,
+      clampChargePercent(reading.charge_percent),
       reading.voltage_no_load ?? null,
       reading.voltage_load1 ?? null,
       reading.voltage_load2 ?? null,

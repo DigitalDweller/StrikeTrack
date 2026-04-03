@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { SchedulableTriggerInputTypes } from 'expo-notifications';
 import { Platform } from 'react-native';
 
-const REST_SECONDS = 30 * 60;
+const REST_SECONDS = 60 * 60;
 
 let androidChannelReady = false;
 
@@ -22,13 +22,13 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return status === 'granted';
 }
 
-/** Schedules a local notification 30 minutes from now (after post-match stats are saved). */
+/** Schedules a local notification 60 minutes from now (after post-match stats are saved). */
 export async function schedulePlugInReminder(batteryName: string): Promise<string | null> {
   await ensureAndroidChannel();
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: 'Plug battery in',
-      body: `${batteryName}: 30 min rest is up — safe to put back on the charger.`,
+      body: `${batteryName}: 60 min cool-off is up — safe to put back on the charger.`,
     },
     trigger: {
       type: SchedulableTriggerInputTypes.TIME_INTERVAL,

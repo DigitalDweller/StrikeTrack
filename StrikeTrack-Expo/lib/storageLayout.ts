@@ -4,7 +4,7 @@ export type StorageSection = 'charging' | 'on_field' | 'not_charging' | 'extra';
 export const STORAGE_SECTION_LABELS: Record<StorageSection, string> = {
   charging: 'Charging',
   on_field: 'On field',
-  not_charging: 'Not charging',
+  not_charging: 'Cooling Down',
   extra: 'Unassigned',
 };
 
@@ -14,7 +14,7 @@ export type SectionLayout = {
 };
 
 export const STORAGE_LAYOUT: Record<StorageSection, SectionLayout> = {
-  charging: { slotCount: 10, columns: 5 },
+  charging: { slotCount: 12, columns: 6 },
   on_field: { slotCount: 2, columns: 2 },
   not_charging: { slotCount: 4, columns: 2 },
   extra: { slotCount: 4, columns: 2 },

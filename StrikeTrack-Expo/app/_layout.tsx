@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import '../global.css';
 import { initDatabase } from '@/lib/database';
 import { COLORS } from '@/lib/constants';
 import { registerNotificationHandler } from '@/lib/registerNotificationHandler';
@@ -44,7 +45,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen
           name="battery/[id]"
-          options={{ title: 'Battery', headerBackTitle: 'Back' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="add-battery"

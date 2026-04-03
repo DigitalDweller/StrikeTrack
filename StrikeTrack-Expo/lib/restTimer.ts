@@ -1,16 +1,13 @@
 import type { MatchUsage } from './database';
 
-const REST_MS = 30 * 60 * 1000;
+const REST_MS = 60 * 60 * 1000;
 
-/** Minutes until the 30 min post-match rest ends; null if not in rest window. */
+/** Minutes until the 1 hour post-match cool-off ends; null if not in cool-off window. */
 export function minutesRestRemaining(usages: MatchUsage[], batteryId: string): number | null {
-  const withAfter = usages
-    .filter((u) => u.battery_id === batteryId && u.after_recorded_at)
-    .sort(
-      (a, b) =>
-        new Date(b.after_recorded_at!).getTime() - new Date(a.after_recorded_at!).getTime()
-    );
-  const u = withAfter[0];
+  const latestUsage = usages
+    .filter((u) => u.battery_id === batteryId)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+  const u = latestUsage;
   if (!u?.after_recorded_at) return null;
   const end = new Date(u.after_recorded_at).getTime() + REST_MS;
   const left = end - Date.now();

@@ -1,60 +1,60 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS, FONT, RADIUS } from '@/lib/constants';
+import { useMemo } from 'react';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { FONT } from '@/lib/constants';
 import type { Battery, BatteryReading } from '@/lib/database';
 import type { SectionLayout, StorageSection } from '@/lib/storageLayout';
-import { StatusBadge } from '@/components/StatusBadge';
 
 type CellBattery = Battery & {
   latest_reading?: BatteryReading;
 };
 
+function formatResistance(value: number | null | undefined): string {
+  if (value == null) return '--';
+  const n = Number(value);
+  if (Number.isNaN(n)) return '--';
+  return `${n.toFixed(3)} Ω`;
+}
+
+function formatCharge(value: number | null | undefined): string {
+  if (value == null) return '--';
+  const n = Number(value);
+  if (Number.isNaN(n)) return '--';
+  return `${Math.round(n)}%`;
+}
+
 const SECTION_THEME: Record<
   StorageSection,
   {
-    cardBg: string;
-    cardBorder: string;
-    title: string;
-    emptyCellBg: string;
-    cellBorder: string;
-    slotNumber: string;
-    emptyMark: string;
+    icon: keyof typeof Feather.glyphMap;
+    iconColor: string;
+    label: string;
+    dot: string;
   }
 > = {
   on_field: {
-    cardBg: '#1a0d10',
-    cardBorder: '#5c1f28',
-    title: '#f87171',
-    emptyCellBg: '#221417',
-    cellBorder: '#7f1d2a',
-    slotNumber: '#fca5a5',
-    emptyMark: '#f87171',
+    icon: 'play',
+    iconColor: '#f87171',
+    label: 'ON FIELD',
+    dot: '#fb7185',
   },
   charging: {
-    cardBg: '#0d1a12',
-    cardBorder: '#245a34',
-    title: '#4ade80',
-    emptyCellBg: '#132117',
-    cellBorder: '#2f7a43',
-    slotNumber: '#86efac',
-    emptyMark: '#4ade80',
+    icon: 'zap',
+    iconColor: '#34d399',
+    label: 'CHARGING',
+    dot: '#34d399',
   },
   not_charging: {
-    cardBg: '#1b1608',
-    cardBorder: '#6a531a',
-    title: '#facc15',
-    emptyCellBg: '#252012',
-    cellBorder: '#8b6a1f',
-    slotNumber: '#fde047',
-    emptyMark: '#facc15',
+    icon: 'wind',
+    iconColor: '#fbbf24',
+    label: 'COOLING DOWN',
+    dot: '#f59e0b',
   },
   extra: {
-    cardBg: '#161820',
-    cardBorder: '#3a3d44',
-    title: '#d1d5db',
-    emptyCellBg: '#1d1f24',
-    cellBorder: '#4b5563',
-    slotNumber: '#e5e7eb',
-    emptyMark: '#d1d5db',
+    icon: 'inbox',
+    iconColor: '#a1a1aa',
+    label: 'UNASSIGNED',
+    dot: '#71717a',
   },
 };
 
@@ -63,6 +63,7 @@ type Props = {
   section: StorageSection;
   layout: SectionLayout;
   slots: (CellBattery | null)[];
+  cooldownMinutesByBatteryId?: Record<string, number>;
   onPressSlot: (section: StorageSection, slotIndex: number, battery: CellBattery | null) => void;
   onLongPressSlot: (section: StorageSection, slotIndex: number, battery: CellBattery | null) => void;
 };
@@ -72,76 +73,122 @@ export function BatterySection({
   section,
   layout,
   slots,
+  cooldownMinutesByBatteryId,
   onPressSlot,
   onLongPressSlot,
 }: Props) {
   const { slotCount, columns } = layout;
+  const { width } = useWindowDimensions();
+  const compactStatValue = width < 390;
   const theme = SECTION_THEME[section];
-  const rows: number[] = [];
-  for (let start = 0; start < slotCount; start += columns) {
-    rows.push(start);
-  }
+  const responsiveColumns = useMemo(() => {
+    if (width < 640) return 1;
+    if (section === 'charging') {
+      if (width < 768) return 2;
+      if (width < 1024) return 3;
+      if (width < 1280) return 4;
+      return 5;
+    }
+    return columns;
+  }, [columns, section, width]);
+
+  const rows = useMemo(() => {
+    const output: number[] = [];
+    for (let start = 0; start < slotCount; start += responsiveColumns) {
+      output.push(start);
+    }
+    return output;
+  }, [slotCount, responsiveColumns]);
 
   return (
-    <View style={[styles.wrap, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
-      <Text style={[styles.title, { color: theme.title }]}>{title}</Text>
+    <View style={styles.wrap}>
+      <View style={styles.headerRow}>
+        <Feather name={theme.icon} size={18} color={theme.iconColor} />
+        <Text style={styles.title}>{title}</Text>
+      </View>
       {rows.map((start) => (
         <View key={start} style={styles.row}>
-          {Array.from({ length: columns }, (_, col) => {
+          {Array.from({ length: responsiveColumns }, (_, col) => {
             const idx = start + col;
             if (idx >= slotCount) {
               return <View key={col} style={[styles.cellSpacer, { flex: 1 }]} />;
             }
             const b = slots[idx];
             return (
-              <TouchableOpacity
+              <Pressable
                 key={idx}
-                style={[
+                style={({ hovered, pressed }) => [
                   styles.cell,
-                  b ? styles.cellFilled : styles.cellEmpty,
-                  { borderColor: theme.cellBorder },
-                  !b ? { backgroundColor: theme.emptyCellBg } : null,
+                  {
+                    borderColor: hovered ? '#3f3f46' : 'rgba(63, 63, 70, 0.5)',
+                    backgroundColor: hovered || pressed ? 'rgba(39, 39, 42, 0.8)' : '#18181b',
+                  },
                 ]}
                 onPress={() => onPressSlot(section, idx, b)}
                 onLongPress={() => onLongPressSlot(section, idx, b)}
                 delayLongPress={400}
-                activeOpacity={0.75}
               >
-                <Text style={[styles.slotLabel, { color: theme.slotNumber }]}>{idx + 1}</Text>
-                {b ? (
-                  <View style={styles.filledContent}>
-                    <Text
-                      style={styles.cellName}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.35}
-                    >
-                      {b.name}
+                <View style={styles.topRow}>
+                  <View style={styles.idGroup}>
+                    <Text style={[styles.batteryName, !b ? styles.batteryNameMuted : null]} numberOfLines={1}>
+                      {b?.name ?? 'Unassigned'}
                     </Text>
-                    <View style={styles.infoCol}>
-                      {b.latest_reading ? (
-                        <View style={styles.cellMeta}>
-                          <View style={styles.badgeWrap}>
-                            <StatusBadge status={b.latest_reading.status} />
-                          </View>
-                          <Text style={styles.cellPct}>
-                            {Math.round(b.latest_reading.charge_percent)}%
-                          </Text>
-                        </View>
-                      ) : (
-                        <Text style={styles.noReading}>—</Text>
-                      )}
-                      <Text style={styles.cellOhms}>
-                        {b.latest_reading?.internal_resistance != null
-                          ? `${b.latest_reading.internal_resistance.toFixed(3)} Ω`
-                          : '— Ω'}
-                      </Text>
-                    </View>
                   </View>
-                ) : (
-                  <Text style={[styles.emptyLabel, { color: theme.emptyMark }]}>—</Text>
-                )}
-              </TouchableOpacity>
+                  <View style={styles.statusRow}>
+                    <View
+                      style={[
+                        styles.statusDot,
+                        { backgroundColor: b ? theme.dot : '#52525b' },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.statusText,
+                        section === 'not_charging' && cooldownMinutesByBatteryId?.[b?.id ?? ''] != null
+                          ? styles.statusTextNoTransform
+                          : null,
+                      ]}
+                    >
+                      {b
+                        ? section === 'not_charging' && cooldownMinutesByBatteryId?.[b.id] != null
+                          ? `COOLING ~${cooldownMinutesByBatteryId[b.id]}m`
+                          : theme.label
+                        : 'OPEN'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.dataSpacer} />
+                <View style={styles.statsRow}>
+                  <View style={styles.statBlock}>
+                    <Text style={styles.statLabel}>Charge</Text>
+                    <Text
+                      style={[
+                        styles.statValue,
+                        compactStatValue ? styles.statValueCompact : null,
+                        !b?.latest_reading ? styles.statValueMuted : null,
+                      ]}
+                    >
+                      {formatCharge(b?.latest_reading?.charge_percent)}
+                    </Text>
+                  </View>
+                  <View style={[styles.statBlock, styles.statBlockRight]}>
+                    <Text style={[styles.statLabel, styles.statLabelRight]}>Resistance</Text>
+                    <Text
+                      style={[
+                        styles.statValue,
+                        styles.statValueRight,
+                        b?.latest_reading?.internal_resistance == null
+                          ? styles.statValueMuted
+                          : null,
+                        compactStatValue ? styles.statValueCompact : null,
+                      ]}
+                    >
+                      {formatResistance(b?.latest_reading?.internal_resistance)}
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
             );
           })}
         </View>
@@ -152,110 +199,130 @@ export function BatterySection({
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.lg,
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 6,
-    marginBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(63, 63, 70, 0.4)',
+    paddingBottom: 12,
+    marginBottom: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
   },
   title: {
-    fontSize: FONT.section,
+    fontSize: FONT.section + 1,
     fontWeight: '800',
-    marginBottom: 14,
-    textAlign: 'center',
-    letterSpacing: -0.3,
+    color: '#f4f4f5',
+    textAlign: 'left',
+    letterSpacing: -0.2,
   },
   row: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 10,
-    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 8,
   },
   cellSpacer: {
     minHeight: 1,
   },
   cell: {
     flex: 1,
-    height: 100,
-    borderRadius: RADIUS.md,
-    padding: 8,
+    minHeight: 128,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  cellEmpty: {
-    backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cellFilled: {
-    backgroundColor: COLORS.surfaceAlt,
-    justifyContent: 'center',
-  },
-  filledContent: {
+  topRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
-    gap: 8,
+    alignItems: 'center',
   },
-  slotLabel: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-  },
-  cellName: {
-    fontSize: 48,
-    fontWeight: '800',
-    lineHeight: 50,
-    color: COLORS.text,
-    flex: 1,
-    paddingRight: 6,
-    textAlign: 'left',
-  },
-  infoCol: {
-    alignItems: 'flex-end',
+  idGroup: {
     justifyContent: 'center',
-    minWidth: 112,
+    flexShrink: 1,
+    minWidth: 0,
   },
-  cellMeta: {
+  batteryName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#f4f4f5',
+    lineHeight: 21,
+    flexShrink: 1,
+  },
+  batteryNameMuted: {
+    color: '#71717a',
+  },
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 8,
-    flexWrap: 'nowrap',
+    gap: 6,
+    marginTop: 6,
   },
-  badgeWrap: {
-    transform: [{ scale: 1.12 }],
+  statusDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 999,
   },
-  cellPct: {
+  statusText: {
+    color: '#a1a1aa',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.25,
+  },
+  statusTextNoTransform: {
+    textTransform: 'none',
+  },
+  dataSpacer: {
+    flex: 1,
+  },
+  statsRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  statBlock: {
+    flex: 1,
+    minWidth: 0,
+    gap: 1,
+  },
+  statLabel: {
+    fontSize: 8,
+    color: '#71717a',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  statValue: {
     fontSize: 24,
+    color: '#f4f4f5',
     fontWeight: '800',
-    color: COLORS.text,
+    lineHeight: 26,
+    flexShrink: 0,
   },
-  noReading: {
-    fontSize: FONT.meta,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginTop: 4,
+  statValueCompact: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  statBlockRight: {
+    alignItems: 'flex-end',
+  },
+  statLabelRight: {
     textAlign: 'right',
   },
-  cellOhms: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginTop: 4,
+  statValueRight: {
     textAlign: 'right',
   },
-  emptyLabel: {
-    fontSize: 22,
-    fontWeight: '300',
-    color: COLORS.textTertiary,
+  statValueMuted: {
+    color: '#3f3f46',
   },
 });

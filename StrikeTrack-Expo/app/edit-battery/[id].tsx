@@ -8,17 +8,9 @@ import {
   ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import {
-  getBatteryById,
-  updateBattery,
-} from '@/lib/batteryDb';
+import { getBatteryById, updateBattery } from '@/lib/batteryDb';
 import { normalizeRouteParam } from '@/lib/routeParams';
-import {
-  COLORS,
-  FONT,
-  RADIUS,
-  SPACE,
-} from '@/lib/constants';
+import { COLORS, FONT, RADIUS, SPACE } from '@/lib/constants';
 
 export default function EditBatteryScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -56,7 +48,7 @@ export default function EditBatteryScreen() {
   if (loading) {
     return (
       <View style={[styles.centered, { backgroundColor: COLORS.background }]}>
-        <Text style={styles.loadingText}>Loading…</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }

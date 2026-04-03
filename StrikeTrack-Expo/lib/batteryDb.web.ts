@@ -2,6 +2,7 @@
 // Data persists across refreshes and works offline after first load.
 
 import type { Battery, BatteryReading, MatchUsage } from './database.web';
+import { clampChargePercent } from './chargePercent';
 import { isStorageSection, type StorageSection } from './storageLayout';
 
 const BATTERIES_KEY = 'striketrack_batteries';
@@ -140,7 +141,9 @@ function loadMatchUsages(): MatchUsage[] {
     const raw = getStorageItem(MATCH_USAGES_KEY);
     if (!raw) return fallback;
     const arr = JSON.parse(raw) as Record<string, unknown>[];
-    const data = arr.map(normalizeMatchUsage).filter((u) => u.id.length > 0 && u.battery_id.length > 0);
+    const data = arr
+      .map(normalizeMatchUsage)
+      .filter((u) => u.id.length > 0 && u.battery_id.length > 0);
     memoryMatchUsages = data;
     return data;
   } catch {
@@ -305,6 +308,10 @@ export async function insertMatchUsageBefore(row: {
   const usages = loadMatchUsages();
   const full: MatchUsage = {
     ...row,
+    before_charge_percent:
+      row.before_charge_percent == null
+        ? null
+        : clampChargePercent(row.before_charge_percent),
     after_charge_percent: null,
     after_voltage_no_load: null,
     after_internal_resistance: null,
@@ -328,7 +335,7 @@ export async function completeMatchUsageAfter(
   if (i < 0) return;
   usages[i] = {
     ...usages[i],
-    after_charge_percent: after.after_charge_percent,
+    after_charge_percent: clampChargePercent(after.after_charge_percent),
     after_voltage_no_load: after.after_voltage_no_load,
     after_internal_resistance: after.after_internal_resistance,
     after_recorded_at: new Date().toISOString(),
