@@ -14,7 +14,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:ios": "eas build --platform ios",
-    "build:web": "expo export -p web && npx workbox generateSW workbox-config.js",
+    "build:web": "node ./scripts/copy-web-fonts.cjs && expo export -p web && npx workbox generateSW workbox-config.js",
     "offline": "npm run build:web && npx serve dist -p 3000",
     "doctor": "npx expo-doctor@latest",
     "fix": "expo install --fix",

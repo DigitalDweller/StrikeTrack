@@ -4,6 +4,15 @@
   "description": "Track Battery Beak readings for FIRST Robotics",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "theme_color": "#0a84ff",
-  "background_color": "#1a1a1a"
+  "background_color": "#1a1a1a",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
