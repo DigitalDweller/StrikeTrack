@@ -123,6 +123,7 @@ export default function BatteryListScreen() {
   const params = useLocalSearchParams<{ tab?: string | string[]; battery?: string | string[] }>();
   const routeBatteryId = normalizeRouteParam(params.battery);
   const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, 14);
   const { width, height: windowHeight } = useWindowDimensions();
   const pagerRef = useRef<ScrollView>(null);
   const previousTabRef = useRef<DashboardTab>('match');
@@ -352,7 +353,6 @@ export default function BatteryListScreen() {
       });
       setNewBatteryName('');
       await load();
-      setActiveTab('cooling');
     } catch {
       Alert.alert('Could not add battery', 'Please try again.');
     } finally {
@@ -366,7 +366,7 @@ export default function BatteryListScreen() {
         <ScrollView
           contentContainerStyle={[
             styles.list,
-            { paddingTop: insets.top + 10, paddingBottom: 148 + insets.bottom },
+            { paddingTop: topInset + 10, paddingBottom: 148 + insets.bottom },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -425,7 +425,7 @@ export default function BatteryListScreen() {
         <ScrollView
           contentContainerStyle={[
             styles.list,
-            { paddingTop: insets.top + 10, paddingBottom: 148 + insets.bottom },
+            { paddingTop: topInset + 10, paddingBottom: 148 + insets.bottom },
           ]}
           showsVerticalScrollIndicator={false}
         >
@@ -448,7 +448,7 @@ export default function BatteryListScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.list,
-          { paddingTop: insets.top + 10, paddingBottom: 148 + insets.bottom },
+          { paddingTop: topInset + 10, paddingBottom: 148 + insets.bottom },
         ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => load({ showRefreshing: true })} />

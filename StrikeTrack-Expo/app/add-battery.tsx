@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getAllBatteries, insertBattery, insertReading } from '@/lib/batteryDb';
 import { capChargePercentInput, clampChargePercent, MAX_CHARGE_PERCENT } from '@/lib/chargePercent';
 import { COLORS, FONT, RADIUS, SPACE } from '@/lib/constants';
@@ -24,6 +25,8 @@ function firstOpenSlotIndex(slotCount: number, usedSlots: Set<number>): number |
 
 export default function AddBatteryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, 14);
   const nameRef = useRef<TextInput>(null);
   const chargeRef = useRef<TextInput>(null);
   const ohmsRef = useRef<TextInput>(null);
@@ -89,7 +92,10 @@ export default function AddBatteryScreen() {
       <ScrollView
         style={styles.container}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topInset + 8, paddingBottom: Math.max(insets.bottom, 16) + 24 },
+        ]}
       >
         <Text style={styles.screenTitle}>New battery</Text>
 
@@ -160,13 +166,13 @@ export default function AddBatteryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  scrollContent: { paddingBottom: 40, paddingHorizontal: SPACE.screen },
+  scrollContent: { paddingHorizontal: SPACE.screen },
   screenTitle: {
     fontSize: FONT.hero,
     fontWeight: '700',
     color: COLORS.text,
     letterSpacing: -0.8,
-    marginTop: 8,
+    marginTop: 0,
     marginBottom: SPACE.block,
   },
   block: { marginBottom: SPACE.block },
