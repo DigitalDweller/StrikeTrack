@@ -1,0 +1,393 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1000001 /* StrikeTrackApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001; };
+		A1000002 /* Battery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002; };
+		A1000003 /* BatteryReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000003; };
+		A1000004 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000004; };
+		A1000005 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000005; };
+		A1000006 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006; };
+		A1000007 /* MetricCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000007; };
+		A1000008 /* BatteryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008; };
+		A1000009 /* BatteryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009; };
+		A1000010 /* AddBatterySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000010; };
+		A1000011 /* EditBatterySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011; };
+		A1000012 /* BatteryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000012; };
+		A1000013 /* ManualEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013; };
+		A1000014 /* VisionOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000014; };
+		A1000015 /* BatteryBeakParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000015; };
+		A1000016 /* ScanFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000016; };
+		A1000017 /* CapturePhaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000017; };
+		A1000018 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000018; };
+		A1000019 /* ProcessingPhaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000019; };
+		A1000020 /* ConfirmationPhaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000020; };
+		A1000021 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000021; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A3000000 /* StrikeTrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StrikeTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2000001 /* StrikeTrackApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikeTrackApp.swift; sourceTree = "<group>"; };
+		A2000002 /* Battery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Battery.swift; sourceTree = "<group>"; };
+		A2000003 /* BatteryReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryReading.swift; sourceTree = "<group>"; };
+		A2000004 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
+		A2000005 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		A2000006 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
+		A2000007 /* MetricCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCard.swift; sourceTree = "<group>"; };
+		A2000008 /* BatteryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryListView.swift; sourceTree = "<group>"; };
+		A2000009 /* BatteryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryRowView.swift; sourceTree = "<group>"; };
+		A2000010 /* AddBatterySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddBatterySheet.swift; sourceTree = "<group>"; };
+		A2000011 /* EditBatterySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditBatterySheet.swift; sourceTree = "<group>"; };
+		A2000012 /* BatteryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryDetailView.swift; sourceTree = "<group>"; };
+		A2000013 /* ManualEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualEntrySheet.swift; sourceTree = "<group>"; };
+		A2000014 /* VisionOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionOCRService.swift; sourceTree = "<group>"; };
+		A2000015 /* BatteryBeakParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryBeakParser.swift; sourceTree = "<group>"; };
+		A2000016 /* ScanFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlowView.swift; sourceTree = "<group>"; };
+		A2000017 /* CapturePhaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePhaseView.swift; sourceTree = "<group>"; };
+		A2000018 /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+		A2000019 /* ProcessingPhaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingPhaseView.swift; sourceTree = "<group>"; };
+		A2000020 /* ConfirmationPhaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationPhaseView.swift; sourceTree = "<group>"; };
+		A2000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A4000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A5000000 = {
+			isa = PBXGroup;
+			children = (
+				A5000001 /* StrikeTrack */,
+				A5000002 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A5000002 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A3000000 /* StrikeTrack.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A5000001 /* StrikeTrack */ = {
+			isa = PBXGroup;
+			children = (
+				A2000001 /* StrikeTrackApp.swift */,
+				A5000003 /* Models */,
+				A5000004 /* Services */,
+				A5000005 /* Views */,
+				A5000006 /* Design */,
+				A2000021 /* Assets.xcassets */,
+			);
+			path = StrikeTrack;
+			sourceTree = "<group>";
+		};
+		A5000003 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A2000002 /* Battery.swift */,
+				A2000003 /* BatteryReading.swift */,
+				A2000004 /* Enums.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A5000004 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A2000014 /* VisionOCRService.swift */,
+				A2000015 /* BatteryBeakParser.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A5000005 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A5000008 /* BatteryList */,
+				A5000009 /* BatteryDetail */,
+				A5000010 /* ScanFlow */,
+				A5000011 /* Components */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A5000006 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				A2000005 /* DesignTokens.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		A5000008 /* BatteryList */ = {
+			isa = PBXGroup;
+			children = (
+				A2000008 /* BatteryListView.swift */,
+				A2000009 /* BatteryRowView.swift */,
+				A2000010 /* AddBatterySheet.swift */,
+				A2000011 /* EditBatterySheet.swift */,
+			);
+			path = BatteryList;
+			sourceTree = "<group>";
+		};
+		A5000009 /* BatteryDetail */ = {
+			isa = PBXGroup;
+			children = (
+				A2000012 /* BatteryDetailView.swift */,
+				A2000013 /* ManualEntrySheet.swift */,
+			);
+			path = BatteryDetail;
+			sourceTree = "<group>";
+		};
+		A5000010 /* ScanFlow */ = {
+			isa = PBXGroup;
+			children = (
+				A2000016 /* ScanFlowView.swift */,
+				A2000017 /* CapturePhaseView.swift */,
+				A2000018 /* CameraView.swift */,
+				A2000019 /* ProcessingPhaseView.swift */,
+				A2000020 /* ConfirmationPhaseView.swift */,
+			);
+			path = ScanFlow;
+			sourceTree = "<group>";
+		};
+		A5000011 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A2000006 /* StatusBadge.swift */,
+				A2000007 /* MetricCard.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A6000000 /* StrikeTrack */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A7000002;
+			buildPhases = (
+				A6000001 /* Sources */,
+				A4000001 /* Frameworks */,
+				A6000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StrikeTrack;
+			productName = StrikeTrack;
+			productReference = A3000000 /* StrikeTrack.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A8000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = A7000001;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A5000000;
+			productRefGroup = A5000002 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A6000000 /* StrikeTrack */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A6000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000021 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A6000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000001 /* StrikeTrackApp.swift in Sources */,
+				A1000002 /* Battery.swift in Sources */,
+				A1000003 /* BatteryReading.swift in Sources */,
+				A1000004 /* Enums.swift in Sources */,
+				A1000005 /* DesignTokens.swift in Sources */,
+				A1000006 /* StatusBadge.swift in Sources */,
+				A1000007 /* MetricCard.swift in Sources */,
+				A1000008 /* BatteryListView.swift in Sources */,
+				A1000009 /* BatteryRowView.swift in Sources */,
+				A1000010 /* AddBatterySheet.swift in Sources */,
+				A1000011 /* EditBatterySheet.swift in Sources */,
+				A1000012 /* BatteryDetailView.swift in Sources */,
+				A1000013 /* ManualEntrySheet.swift in Sources */,
+				A1000014 /* VisionOCRService.swift in Sources */,
+				A1000015 /* BatteryBeakParser.swift in Sources */,
+				A1000016 /* ScanFlowView.swift in Sources */,
+				A1000017 /* CapturePhaseView.swift in Sources */,
+				A1000018 /* CameraView.swift in Sources */,
+				A1000019 /* ProcessingPhaseView.swift in Sources */,
+				A1000020 /* ConfirmationPhaseView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A9000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A9000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A9000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = StrikeTrack/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = StrikeTrack;
+				INFOPLIST_KEY_NSCameraUsageDescription = "StrikeTrack needs camera access to scan Battery Beak readings.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "StrikeTrack needs photo library access to import Battery Beak screenshots.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.striketrack.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A9000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = StrikeTrack/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = StrikeTrack;
+				INFOPLIST_KEY_NSCameraUsageDescription = "StrikeTrack needs camera access to scan Battery Beak readings.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "StrikeTrack needs photo library access to import Battery Beak screenshots.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.striketrack.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A7000001 /* Build configuration list for PBXProject "StrikeTrack" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9000001 /* Debug */,
+				A9000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A7000002 /* Build configuration list for PBXNativeTarget "StrikeTrack" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9000003 /* Debug */,
+				A9000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A8000000 /* Project object */;
+}
