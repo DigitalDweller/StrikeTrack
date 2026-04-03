@@ -1,0 +1,9 @@
+{
+  "short_name": "StrikeTrack",
+  "name": "StrikeTrack - Pit Battery Tracker",
+  "description": "Track Battery Beak readings for FIRST Robotics",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0a84ff",
+  "background_color": "#1a1a1a"
+}

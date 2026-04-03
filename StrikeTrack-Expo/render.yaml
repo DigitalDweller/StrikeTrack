@@ -1,0 +1,8 @@
+# Render Static Site - StrikeTrack Web
+# See DEPLOY.md for setup instructions.
+services:
+  - type: web
+    name: striketrack
+    env: static
+    buildCommand: npm install && npm run build:web
+    staticPublishPath: ./dist

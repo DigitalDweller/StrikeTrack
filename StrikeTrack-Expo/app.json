@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "StrikeTrack",
+    "slug": "striketrack",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a1a"
+    },
+    "userInterfaceStyle": "dark",
+    "scheme": "striketrack",
+    "ios": {
+      "bundleIdentifier": "com.striketrack.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "StrikeTrack needs camera access to scan Battery Beak readings.",
+        "NSPhotoLibraryUsageDescription": "StrikeTrack needs photo library access to import Battery Beak screenshots.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.striketrack.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "dc6fa0cc-9586-449b-8626-dd8c814c0280"
+      }
+    },
+    "owner": "cthads-organization",
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
