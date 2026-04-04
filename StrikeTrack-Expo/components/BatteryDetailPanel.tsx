@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,21 +11,24 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   completeMatchUsageAfter,
   deleteBattery,
   getAllBatteries,
   getBatteryById,
+  getGlobalReadingChartYMaxes,
   getMatchUsagesByBatteryId,
+  getReadingsByBatteryId,
   getPendingMatchUsages,
   insertMatchUsageBefore,
   insertReading,
   setBatteryStoragePlacement,
 } from '@/lib/batteryDb';
 import { COLORS, FONT, RADIUS, SPACE } from '@/lib/constants';
-import type { Battery } from '@/lib/database';
+import type { Battery, BatteryReading, MatchUsage } from '@/lib/database';
+import { BatteryHistoryCharts } from '@/components/BatteryHistoryCharts';
 import { capChargePercentInput, clampChargePercent } from '@/lib/chargePercent';
 import { STORAGE_LAYOUT, type StorageSection } from '@/lib/storageLayout';
 import { minutesRestRemaining } from '@/lib/restTimer';
@@ -37,6 +40,7 @@ const CHARGE_FIELD_KEYS: FieldKey[] = ['charge', 'preCharge', 'postCharge'];
 type ActionKey =
   | 'start_charging'
   | 'send_to_match'
+  | 'check_in'
   | 'stop_charging'
   | 'resume_charging'
   | 'make_unassigned'
@@ -75,6 +79,16 @@ const ACTIONS_BY_STATUS: Record<WorkflowStatus, TransitionAction[]> = {
         { key: 'matchNumber', label: 'Match Number', placeholder: 'Q12' },
         { key: 'preCharge', label: 'Pre-Match Charge %', placeholder: '100', numeric: true },
         { key: 'preOhms', label: 'Pre-Match Ohms', placeholder: '0.025', numeric: true },
+      ],
+    },
+    {
+      key: 'check_in',
+      label: 'Check In',
+      nextStatus: 'Charging',
+      variant: 'charging',
+      fields: [
+        { key: 'charge', label: 'Charge %', placeholder: '98', numeric: true },
+        { key: 'ohms', label: 'Ohms', placeholder: '0.026', numeric: true },
       ],
     },
     {
@@ -180,6 +194,8 @@ export function BatteryDetailPanel({ batteryId }: BatteryDetailPanelProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [battery, setBattery] = useState<Battery | null>(null);
+  const [readings, setReadings] = useState<BatteryReading[]>([]);
+  const [matchUsages, setMatchUsages] = useState<MatchUsage[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [cooldownMinutes, setCooldownMinutes] = useState<number | null>(null);
@@ -194,24 +210,40 @@ export function BatteryDetailPanel({ batteryId }: BatteryDetailPanelProps) {
     postOhms: '',
   });
   const [submittingAction, setSubmittingAction] = useState(false);
+  const [chartYMaxes, setChartYMaxes] = useState<{
+    chargePercentMax: number | null;
+    ohmsMax: number | null;
+  }>({ chargePercentMax: null, ohmsMax: null });
 
   const reload = useCallback(() => {
     if (!batteryId) {
       setLoaded(true);
+      setChartYMaxes({ chargePercentMax: null, ohmsMax: null });
       return;
     }
-    Promise.all([getBatteryById(batteryId), getMatchUsagesByBatteryId(batteryId)]).then(
-      ([b, usages]) => {
-        setBattery(b ?? null);
-        setCooldownMinutes(minutesRestRemaining(usages, batteryId));
-        setLoaded(true);
-      }
-    );
+    Promise.all([
+      getBatteryById(batteryId),
+      getMatchUsagesByBatteryId(batteryId),
+      getReadingsByBatteryId(batteryId),
+      getGlobalReadingChartYMaxes(),
+    ]).then(([b, usages, rlist, caps]) => {
+      setBattery(b ?? null);
+      setMatchUsages(usages);
+      setReadings(rlist);
+      setChartYMaxes({
+        chargePercentMax: caps.chargePercentMax,
+        ohmsMax: caps.ohmsMax,
+      });
+      setCooldownMinutes(minutesRestRemaining(usages, batteryId));
+      setLoaded(true);
+    });
   }, [batteryId]);
 
-  useEffect(() => {
-    reload();
-  }, [reload]);
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload])
+  );
 
   const runDelete = async () => {
     if (!battery || deleting) return;
@@ -340,6 +372,7 @@ export function BatteryDetailPanel({ batteryId }: BatteryDetailPanelProps) {
     if (!activeAction || !battery || submittingAction) return;
     try {
       setSubmittingAction(true);
+      const actionKey = activeAction.key;
       const destinationTab = statusToDashboardTab(activeAction.nextStatus);
       if (activeAction.key === 'send_to_match') {
         const preCharge = parseNumberField('preCharge');
@@ -369,6 +402,12 @@ export function BatteryDetailPanel({ batteryId }: BatteryDetailPanelProps) {
             after_charge_percent: postCharge,
             after_voltage_no_load: null,
             after_internal_resistance: postOhms,
+            after_return_path:
+              activeAction.key === 'return_charge'
+                ? 'charging'
+                : activeAction.key === 'return_unassigned'
+                  ? 'unassigned'
+                  : 'cooling',
           });
         }
         if (activeAction.key === 'return_charge') {
@@ -381,6 +420,10 @@ export function BatteryDetailPanel({ batteryId }: BatteryDetailPanelProps) {
           await addReading('Cooling Down', postCharge, postOhms);
           await assignToSection('Cooling Down');
         }
+      } else if (activeAction.key === 'check_in') {
+        const charge = parseNumberField('charge');
+        const ohms = parseNumberField('ohms');
+        await addReading('Charging', charge, ohms);
       } else {
         if (activeAction.key === 'start_charging' && cooldownMinutes != null) {
           throw new Error(
@@ -393,7 +436,11 @@ export function BatteryDetailPanel({ batteryId }: BatteryDetailPanelProps) {
         await assignToSection(activeAction.nextStatus);
       }
       setActiveAction(null);
-      router.replace({ pathname: '/', params: { tab: destinationTab } });
+      if (actionKey === 'check_in') {
+        reload();
+      } else {
+        router.replace({ pathname: '/', params: { tab: destinationTab } });
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not update battery state.';
       Alert.alert('Transition failed', message);
@@ -471,6 +518,12 @@ export function BatteryDetailPanel({ batteryId }: BatteryDetailPanelProps) {
             </TouchableOpacity>
           ))}
         </View>
+
+        <BatteryHistoryCharts
+          readings={readings}
+          globalChargePercentMax={chartYMaxes.chargePercentMax}
+          globalOhmsMax={chartYMaxes.ohmsMax}
+        />
 
         <View style={styles.adminActions}>
           <TouchableOpacity

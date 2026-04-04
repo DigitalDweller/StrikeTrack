@@ -70,6 +70,7 @@ function normalizeBattery(raw: Record<string, unknown>): Battery {
     rack_slot: rack,
     storage_section,
     storage_slot,
+    charging_since: toStringValue(raw.charging_since),
     created_at: toStringValue(raw.created_at) ?? new Date().toISOString(),
   };
 }
@@ -103,6 +104,7 @@ function normalizeMatchUsage(raw: Record<string, unknown>): MatchUsage {
     after_voltage_no_load: toFiniteNumber(raw.after_voltage_no_load),
     after_internal_resistance: toFiniteNumber(raw.after_internal_resistance),
     after_recorded_at: toStringValue(raw.after_recorded_at),
+    after_return_path: toStringValue(raw.after_return_path),
     created_at: toStringValue(raw.created_at) ?? new Date().toISOString(),
   };
 }
@@ -192,6 +194,34 @@ export async function getReadingsByBatteryId(batteryId: string): Promise<Battery
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
+export async function getAllReadings(): Promise<BatteryReading[]> {
+  return loadReadings();
+}
+
+export async function getGlobalReadingChartYMaxes(): Promise<{
+  chargePercentMax: number | null;
+  ohmsMax: number | null;
+}> {
+  const readings = loadReadings();
+  let chargePercentMax: number | null = null;
+  let ohmsMax: number | null = null;
+  for (const r of readings) {
+    if (Number.isFinite(r.charge_percent)) {
+      chargePercentMax =
+        chargePercentMax == null ? r.charge_percent : Math.max(chargePercentMax, r.charge_percent);
+    }
+    const ir = r.internal_resistance;
+    if (ir != null && Number.isFinite(ir) && ir > 0) {
+      ohmsMax = ohmsMax == null ? ir : Math.max(ohmsMax, ir);
+    }
+  }
+  return {
+    chargePercentMax:
+      chargePercentMax != null && chargePercentMax > 0 ? chargePercentMax : null,
+    ohmsMax: ohmsMax != null && ohmsMax > 0 ? ohmsMax : null,
+  };
+}
+
 export async function insertBattery(battery: Omit<Battery, 'created_at'>): Promise<void> {
   const batteries = loadBatteries();
   batteries.push({
@@ -199,6 +229,7 @@ export async function insertBattery(battery: Omit<Battery, 'created_at'>): Promi
     rack_slot: battery.rack_slot ?? null,
     storage_section: battery.storage_section ?? null,
     storage_slot: battery.storage_slot ?? null,
+    charging_since: battery.charging_since ?? null,
     created_at: new Date().toISOString(),
   });
   saveBatteries(batteries);
@@ -217,6 +248,7 @@ export async function updateBattery(
       | 'rack_slot'
       | 'storage_section'
       | 'storage_slot'
+      | 'charging_since'
     >
   >
 ): Promise<void> {
@@ -234,27 +266,54 @@ export async function setBatteryStoragePlacement(
   slot: number | null
 ): Promise<void> {
   const batteries = loadBatteries();
+  const idx = batteries.findIndex((b) => b.id === batteryId);
+  const b = idx >= 0 ? batteries[idx] : null;
+  if (!b) return;
+
   if (section == null || slot == null) {
-    const i = batteries.findIndex((b) => b.id === batteryId);
-    if (i >= 0) {
-      batteries[i].storage_section = null;
-      batteries[i].storage_slot = null;
-      saveBatteries(batteries);
-    }
+    b.storage_section = null;
+    b.storage_slot = null;
+    b.charging_since = null;
+    saveBatteries(batteries);
     return;
   }
-  for (const b of batteries) {
-    if (b.storage_section === section && b.storage_slot === slot && b.id !== batteryId) {
-      b.storage_section = null;
-      b.storage_slot = null;
+  for (const other of batteries) {
+    if (other.storage_section === section && other.storage_slot === slot && other.id !== batteryId) {
+      other.storage_section = null;
+      other.storage_slot = null;
+      other.charging_since = null;
     }
   }
-  const i = batteries.findIndex((b) => b.id === batteryId);
-  if (i >= 0) {
-    batteries[i].storage_section = section;
-    batteries[i].storage_slot = slot;
-    saveBatteries(batteries);
+
+  const wasCharging = b.storage_section === 'charging';
+  const nowCharging = section === 'charging';
+  if (nowCharging && !wasCharging) {
+    b.charging_since = new Date().toISOString();
+  } else if (!nowCharging) {
+    b.charging_since = null;
   }
+
+  b.storage_section = section;
+  b.storage_slot = slot;
+  saveBatteries(batteries);
+}
+
+export async function reorderChargingSlots(batteryIdsInOrder: string[]): Promise<void> {
+  if (batteryIdsInOrder.length === 0) return;
+  const batteries = loadBatteries();
+  for (const id of batteryIdsInOrder) {
+    const bb = batteries.find((x) => x.id === id);
+    if (bb?.storage_section === 'charging' && bb.storage_slot != null) {
+      bb.storage_slot += 1000;
+    }
+  }
+  for (let i = 0; i < batteryIdsInOrder.length; i++) {
+    const bb = batteries.find((x) => x.id === batteryIdsInOrder[i]);
+    if (bb?.storage_section === 'charging') {
+      bb.storage_slot = i;
+    }
+  }
+  saveBatteries(batteries);
 }
 
 export async function deleteBattery(id: string): Promise<void> {
@@ -316,6 +375,7 @@ export async function insertMatchUsageBefore(row: {
     after_voltage_no_load: null,
     after_internal_resistance: null,
     after_recorded_at: null,
+    after_return_path: null,
     created_at: new Date().toISOString(),
   };
   usages.push(full);
@@ -328,17 +388,21 @@ export async function completeMatchUsageAfter(
     after_charge_percent: number;
     after_voltage_no_load: number | null;
     after_internal_resistance: number | null;
+    after_return_path?: 'cooling' | 'charging' | 'unassigned' | null;
   }
 ): Promise<void> {
   const usages = loadMatchUsages();
   const i = usages.findIndex((u) => u.id === id);
   if (i < 0) return;
+  const path =
+    after.after_return_path === undefined ? null : after.after_return_path;
   usages[i] = {
     ...usages[i],
     after_charge_percent: clampChargePercent(after.after_charge_percent),
     after_voltage_no_load: after.after_voltage_no_load,
     after_internal_resistance: after.after_internal_resistance,
     after_recorded_at: new Date().toISOString(),
+    after_return_path: path,
   };
   saveMatchUsages(usages);
 }

@@ -144,6 +144,7 @@ export function AddMenuFab({ onAdded }: Props) {
         rack_slot: null,
         storage_section: unassignedSlot == null ? null : 'extra',
         storage_slot: unassignedSlot,
+        charging_since: null,
       });
       await onAdded?.();
       setName('');

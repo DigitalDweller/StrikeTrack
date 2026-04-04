@@ -67,6 +67,7 @@ export default function AddBatteryScreen() {
       rack_slot: null,
       storage_section: unassignedSlot == null ? null : 'extra',
       storage_slot: unassignedSlot,
+      charging_since: null,
     });
     await insertReading({
       id: crypto.randomUUID(),

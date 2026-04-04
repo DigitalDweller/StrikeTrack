@@ -41,12 +41,38 @@ export async function getReadingsByBatteryId(batteryId: string): Promise<Battery
   );
 }
 
+export async function getAllReadings(): Promise<BatteryReading[]> {
+  const db = await getDb();
+  return db.getAllAsync<BatteryReading>('SELECT * FROM readings ORDER BY created_at DESC');
+}
+
+/** Highest charge % and ohms seen in any reading (for comparable chart Y-axis across batteries). */
+export async function getGlobalReadingChartYMaxes(): Promise<{
+  chargePercentMax: number | null;
+  ohmsMax: number | null;
+}> {
+  const db = await getDb();
+  const chargeRow = await db.getFirstAsync<{ m: number | null }>(
+    'SELECT MAX(charge_percent) AS m FROM readings'
+  );
+  const ohmsRow = await db.getFirstAsync<{ m: number | null }>(
+    'SELECT MAX(internal_resistance) AS m FROM readings WHERE internal_resistance IS NOT NULL AND internal_resistance > 0'
+  );
+  const c = chargeRow?.m;
+  const o = ohmsRow?.m;
+  return {
+    chargePercentMax:
+      c != null && Number.isFinite(c) && c > 0 ? c : null,
+    ohmsMax: o != null && Number.isFinite(o) && o > 0 ? o : null,
+  };
+}
+
 export async function insertBattery(battery: Omit<Battery, 'created_at'>): Promise<void> {
   const db = await getDb();
   await db.runAsync(
     `INSERT INTO batteries (
-      id, name, chemistry, voltage, amphour, notes, rack_slot, storage_section, storage_slot, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, name, chemistry, voltage, amphour, notes, rack_slot, storage_section, storage_slot, charging_since, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       battery.id,
       battery.name,
@@ -57,6 +83,7 @@ export async function insertBattery(battery: Omit<Battery, 'created_at'>): Promi
       battery.rack_slot ?? null,
       battery.storage_section ?? null,
       battery.storage_slot ?? null,
+      battery.charging_since ?? null,
       new Date().toISOString(),
     ]
   );
@@ -75,6 +102,7 @@ export async function updateBattery(
       | 'rack_slot'
       | 'storage_section'
       | 'storage_slot'
+      | 'charging_since'
     >
   >
 ): Promise<void> {
@@ -84,7 +112,7 @@ export async function updateBattery(
 
   await db.runAsync(
     `UPDATE batteries SET name = ?, chemistry = ?, voltage = ?, amphour = ?, notes = ?,
-     rack_slot = ?, storage_section = ?, storage_slot = ? WHERE id = ?`,
+     rack_slot = ?, storage_section = ?, storage_slot = ?, charging_since = ? WHERE id = ?`,
     [
       updates.name ?? b.name,
       updates.chemistry ?? b.chemistry,
@@ -94,6 +122,7 @@ export async function updateBattery(
       updates.rack_slot !== undefined ? updates.rack_slot : b.rack_slot,
       updates.storage_section !== undefined ? updates.storage_section : b.storage_section,
       updates.storage_slot !== undefined ? updates.storage_slot : b.storage_slot,
+      updates.charging_since !== undefined ? updates.charging_since : b.charging_since,
       id,
     ]
   );
@@ -109,22 +138,57 @@ export async function setBatteryStoragePlacement(
   slot: number | null
 ): Promise<void> {
   const db = await getDb();
+  const b = await getBatteryById(batteryId);
+  if (!b) return;
+
   if (section == null || slot == null) {
     await db.runAsync(
-      'UPDATE batteries SET storage_section = NULL, storage_slot = NULL WHERE id = ?',
+      'UPDATE batteries SET storage_section = NULL, storage_slot = NULL, charging_since = NULL WHERE id = ?',
       [batteryId]
     );
     return;
   }
+
   await db.runAsync(
-    `UPDATE batteries SET storage_section = NULL, storage_slot = NULL
+    `UPDATE batteries SET storage_section = NULL, storage_slot = NULL, charging_since = NULL
      WHERE storage_section = ? AND storage_slot = ? AND id != ?`,
     [section, slot, batteryId]
   );
+
+  const wasCharging = b.storage_section === 'charging';
+  const nowCharging = section === 'charging';
+  let chargingSince = b.charging_since ?? null;
+  if (nowCharging && !wasCharging) {
+    chargingSince = new Date().toISOString();
+  } else if (!nowCharging) {
+    chargingSince = null;
+  }
+
   await db.runAsync(
-    'UPDATE batteries SET storage_section = ?, storage_slot = ? WHERE id = ?',
-    [section, slot, batteryId]
+    'UPDATE batteries SET storage_section = ?, storage_slot = ?, charging_since = ? WHERE id = ?',
+    [section, slot, chargingSince, batteryId]
   );
+}
+
+/** Reassign charging slot indices without leaving `charging` (preserves charging_since). */
+export async function reorderChargingSlots(batteryIdsInOrder: string[]): Promise<void> {
+  if (batteryIdsInOrder.length === 0) return;
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    for (const id of batteryIdsInOrder) {
+      await db.runAsync(
+        `UPDATE batteries SET storage_slot = storage_slot + 1000
+         WHERE id = ? AND storage_section = 'charging'`,
+        [id]
+      );
+    }
+    for (let i = 0; i < batteryIdsInOrder.length; i++) {
+      await db.runAsync(
+        `UPDATE batteries SET storage_slot = ? WHERE id = ? AND storage_section = 'charging'`,
+        [i, batteryIdsInOrder[i]]
+      );
+    }
+  });
 }
 
 export async function getAllMatchUsages(): Promise<MatchUsage[]> {
@@ -189,22 +253,27 @@ export async function completeMatchUsageAfter(
     after_charge_percent: number;
     after_voltage_no_load: number | null;
     after_internal_resistance: number | null;
+    after_return_path?: 'cooling' | 'charging' | 'unassigned' | null;
   }
 ): Promise<void> {
   const db = await getDb();
   const when = new Date().toISOString();
+  const path =
+    after.after_return_path === undefined ? null : after.after_return_path;
   await db.runAsync(
     `UPDATE match_usages SET
       after_charge_percent = ?,
       after_voltage_no_load = ?,
       after_internal_resistance = ?,
-      after_recorded_at = ?
+      after_recorded_at = ?,
+      after_return_path = ?
     WHERE id = ?`,
     [
       clampChargePercent(after.after_charge_percent),
       after.after_voltage_no_load,
       after.after_internal_resistance,
       when,
+      path,
       id,
     ]
   );

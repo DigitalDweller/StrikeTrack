@@ -13,18 +13,26 @@ import {
   NativeScrollEvent,
   Animated,
   BackHandler,
+  Platform,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { BatterySection } from '@/components/BatterySection';
 import { BatteryDetailPanel } from '@/components/BatteryDetailPanel';
+import { StatsTabPanel } from '@/components/StatsTabPanel';
 import {
   getAllBatteries,
   getAllMatchUsages,
+  getAllReadings,
   insertBattery,
+  reorderChargingSlots,
   setBatteryStoragePlacement,
 } from '@/lib/batteryDb';
+import {
+  summarizeBatteryPerformance,
+  type PerformanceSummary,
+} from '@/lib/batteryPerformanceStats';
 import { FONT, SPACE } from '@/lib/constants';
 import type { Battery, BatteryReading } from '@/lib/database';
 import { minutesRestRemaining } from '@/lib/restTimer';
@@ -47,6 +55,14 @@ type CellBattery = Battery & { latest_reading?: BatteryReading };
 type DashboardTab = 'match' | 'charging' | 'add' | 'cooling' | 'stats';
 const TABS: DashboardTab[] = ['match', 'charging', 'add', 'cooling', 'stats'];
 const SWIPE_TABS: DashboardTab[] = ['match', 'charging', 'cooling'];
+
+/** Heavier damping than `fast` so swipe-between-tabs feels ~⅓ as “fast” / whippy. */
+const PAGER_DECELERATION_RATE =
+  Platform.OS === 'ios'
+    ? 0.965
+    : Platform.OS === 'android'
+      ? 0.7
+      : ('normal' as const);
 
 const TAB_ACTIVE_COLORS: Record<DashboardTab, string> = {
   match: '#fb7185',
@@ -109,12 +125,7 @@ async function reorderChargingByHighestChargePercent(
   const orderChanged = sorted.some((b, i) => b.id !== bySlot[i]?.id);
   if (!orderChanged) return false;
 
-  for (const b of charging) {
-    await setBatteryStoragePlacement(b.id, null, null);
-  }
-  for (let i = 0; i < sorted.length; i += 1) {
-    await setBatteryStoragePlacement(sorted[i].id, 'charging', i);
-  }
+  await reorderChargingSlots(sorted.map((b) => b.id));
   return true;
 }
 
@@ -141,6 +152,32 @@ export default function BatteryListScreen() {
   const sheetSlideY = useRef(new Animated.Value(panelHeight)).current;
   const prevSheetIdRef = useRef<string | null>(null);
   const loadGenerationRef = useRef(0);
+  const activeTabRef = useRef<DashboardTab>(activeTab);
+  const [perfSummary, setPerfSummary] = useState<PerformanceSummary | null>(null);
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  const loadPerf = useCallback(async () => {
+    const [batts, usages, readings] = await Promise.all([
+      getAllBatteries(),
+      getAllMatchUsages(),
+      getAllReadings(),
+    ]);
+    setPerfSummary(
+      summarizeBatteryPerformance(
+        batts.map((b) => ({ id: b.id, name: b.name })),
+        usages,
+        readings
+      )
+    );
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'stats') return;
+    void loadPerf();
+  }, [activeTab, loadPerf]);
 
   useEffect(() => {
     if (routeBatteryId) {
@@ -171,12 +208,15 @@ export default function BatteryListScreen() {
       }
       setCooldownMinutesByBatteryId(nextCooldowns);
       setBatteries(list);
+      if (activeTabRef.current === 'stats') {
+        void loadPerf();
+      }
     } finally {
       if (showRefreshing && gen === loadGenerationRef.current) {
         setRefreshing(false);
       }
     }
-  }, []);
+  }, [loadPerf]);
 
   useFocusEffect(
     useCallback(() => {
@@ -350,6 +390,7 @@ export default function BatteryListScreen() {
         rack_slot: null,
         storage_section: unassignedSlot == null ? null : 'extra',
         storage_slot: unassignedSlot,
+        charging_since: null,
       });
       setNewBatteryName('');
       await load();
@@ -422,18 +463,13 @@ export default function BatteryListScreen() {
 
     if (tab === 'stats') {
       return (
-        <ScrollView
-          contentContainerStyle={[
-            styles.list,
-            { paddingTop: topInset + 10, paddingBottom: 148 + insets.bottom },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.panelCard}>
-            <Text style={styles.panelTitle}>Stats</Text>
-            <Text style={styles.comingSoonText}>Coming soon</Text>
-          </View>
-        </ScrollView>
+        <StatsTabPanel
+          perf={perfSummary}
+          refreshing={refreshing}
+          onRefresh={() => load({ showRefreshing: true })}
+          paddingTop={topInset + 10}
+          paddingBottom={148 + insets.bottom}
+        />
       );
     }
 
@@ -587,7 +623,7 @@ export default function BatteryListScreen() {
           snapToAlignment="start"
           directionalLockEnabled
           showsHorizontalScrollIndicator={false}
-          decelerationRate="fast"
+          decelerationRate={PAGER_DECELERATION_RATE}
           scrollEventThrottle={16}
           onScroll={onPagerScroll}
           onMomentumScrollEnd={onPagerEnd}
@@ -621,7 +657,10 @@ export default function BatteryListScreen() {
         </>
       ) : null}
 
-      <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      <SafeAreaView
+        edges={['bottom']}
+        style={[styles.bottomNav, Platform.OS === 'android' ? styles.bottomNavAndroid : null]}
+      >
         {sheetBatteryId ? (
           <View style={styles.bottomNavRowCentered}>
             <Pressable
@@ -701,7 +740,7 @@ export default function BatteryListScreen() {
             </View>
           </View>
         )}
-      </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -792,28 +831,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  statKey: {
-    color: '#a1a1aa',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  statVal: {
-    color: '#f4f4f5',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  comingSoonText: {
-    color: '#a1a1aa',
-    fontSize: 14,
-    fontWeight: '600',
-    paddingVertical: 6,
-  },
   sheetBackdrop: {
     position: 'absolute',
     top: 0,
@@ -842,10 +859,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 50,
-    backgroundColor: 'rgba(24, 24, 27, 0.92)',
+    backgroundColor: 'rgba(24, 24, 27, 0.98)',
     borderTopWidth: 1,
     borderTopColor: '#27272a',
     paddingHorizontal: 4,
+  },
+  bottomNavAndroid: {
+    elevation: 28,
   },
   bottomNavRow: {
     flexDirection: 'row',

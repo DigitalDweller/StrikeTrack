@@ -37,6 +37,16 @@ async function migrateSchema(db: SQLite.SQLiteDatabase) {
     CREATE INDEX IF NOT EXISTS idx_match_usages_battery ON match_usages(battery_id);
     CREATE INDEX IF NOT EXISTS idx_match_usages_created ON match_usages(created_at);
   `);
+
+  const muCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(match_usages)');
+  if (!muCols.some((c) => c.name === 'after_return_path')) {
+    await db.execAsync('ALTER TABLE match_usages ADD COLUMN after_return_path TEXT');
+  }
+
+  const batCols2 = await db.getAllAsync<{ name: string }>('PRAGMA table_info(batteries)');
+  if (!batCols2.some((c) => c.name === 'charging_since')) {
+    await db.execAsync('ALTER TABLE batteries ADD COLUMN charging_since TEXT');
+  }
 }
 
 export async function initDatabase() {
@@ -89,6 +99,8 @@ export type Battery = {
   rack_slot: number | null;
   storage_section: string | null;
   storage_slot: number | null;
+  /** ISO time when battery was last placed on charger (continuous stint). */
+  charging_since: string | null;
   created_at: string;
 };
 
@@ -104,6 +116,8 @@ export type MatchUsage = {
   after_voltage_no_load: number | null;
   after_internal_resistance: number | null;
   after_recorded_at: string | null;
+  /** Where the pack went right after the match: cooling | charging | unassigned */
+  after_return_path: string | null;
   created_at: string;
 };
 

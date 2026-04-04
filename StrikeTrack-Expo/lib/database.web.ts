@@ -10,6 +10,7 @@ export type Battery = {
   rack_slot: number | null;
   storage_section: string | null;
   storage_slot: number | null;
+  charging_since: string | null;
   created_at: string;
 };
 
@@ -39,6 +40,7 @@ export type MatchUsage = {
   after_voltage_no_load: number | null;
   after_internal_resistance: number | null;
   after_recorded_at: string | null;
+  after_return_path: string | null;
   created_at: string;
 };
 
