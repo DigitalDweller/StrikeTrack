@@ -15,7 +15,7 @@ export type SectionLayout = {
 
 export const STORAGE_LAYOUT: Record<StorageSection, SectionLayout> = {
   charging: { slotCount: 12, columns: 6 },
-  on_field: { slotCount: 2, columns: 2 },
+  on_field: { slotCount: 4, columns: 2 },
   not_charging: { slotCount: 4, columns: 2 },
   extra: { slotCount: 4, columns: 2 },
 };

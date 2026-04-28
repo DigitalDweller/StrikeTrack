@@ -61,7 +61,7 @@ export function formatChargeLossHeadline(avgLoss: number): string {
 /** Value line for Ω Δ rows; card title carries “(avg)”. */
 export function formatOhmsHeadline(avgDelta: number): string {
   const sign = avgDelta >= 0 ? '+' : '−';
-  const mag = round1(Math.abs(avgDelta));
+  const mag = Math.abs(avgDelta).toFixed(2);
   return `${sign}${mag} Ω`;
 }
 
